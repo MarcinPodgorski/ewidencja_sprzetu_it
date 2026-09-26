@@ -1,0 +1,512 @@
+// Schemat bazy danych — system ewidencji sprzętu IT.
+//
+// Uwaga o "enumach": provider SQLite w Prisma nie wspiera natywnego typu `enum`
+// (ograniczenie connectora). Pola oznaczone komentarzem `// <NazwaTypu>` są w bazie
+// zwykłym String, a dozwolone wartości są zdefiniowane i walidowane w
+// `shared/src/enums.ts` oraz odpowiadających schematach Zod w `shared/src/schemas/`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Słowniki i ludzie
+// ---------------------------------------------------------------------------
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  nazwa     String   @unique
+  createdAt DateTime @default(now())
+
+  employees             Employee[]
+  equipmentLists        EquipmentList[]
+  profileOprogramowania ProfilOprogramowania[]
+
+  @@map("departments")
+}
+
+/// Pracownik firmy ("Użytkownik" w specyfikacji, pkt 9) — NIE użytkownik aplikacji.
+model Employee {
+  id         Int      @id @default(autoincrement())
+  imie       String
+  nazwisko   String
+  stanowisko String
+  /// Służbowy e-mail = login do Microsoft 365 (UPN) — używany m.in. przez skrypt onboardingu.
+  email      String?
+  dzialId    Int
+  aktywny    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  dzial Department @relation(fields: [dzialId], references: [id])
+
+  computers Computer[]
+  monitors  Monitor[]
+  mice      Mouse[]
+  keyboards Keyboard[]
+  phones    Phone[]
+  simCards  SimCard[]
+  miscItems MiscItem[]
+
+  assignmentHistory AssignmentHistory[]
+  onboardingSesje   OnboardingSesja[]
+
+  @@index([dzialId])
+  @@map("employees")
+}
+
+/// Drobne "dodatki" przypisane do pracownika bez własnej ewidencji (np. podstawka pod
+/// monitor) — celowo POZA generyczną maszynerią sprzętu (EquipmentType, historia
+/// przypisań, spisy, wyszukiwarka /equipment/search): brak numeru ewidencyjnego,
+/// historii, osobnej sekcji w UI. Tylko opis + właściciel, tworzone wprost na karcie
+/// pracownika i usuwane bez śladu (żadnego soft-delete — to celowo najprostszy model).
+model MiscItem {
+  id         Int      @id @default(autoincrement())
+  opis       String
+  employeeId Int
+  createdAt  DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@map("misc_items")
+}
+
+/// Konto użytkownika aplikacji ("Użytkownik aplikacji", pkt 10) — login/hasło/rola.
+model AppUser {
+  id        Int      @id @default(autoincrement())
+  imie      String
+  nazwisko  String
+  login     String   @unique
+  hasloHash String
+  rola      String // AppUserRole: 'ADMIN' | 'USER'
+  aktywny   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdLists       EquipmentList[]           @relation("ListCreator")
+  addedListItems     EquipmentListItem[]       @relation("ListItemAdder")
+  grantedPermissions EquipmentListPermission[] @relation("PermissionGrantedTo")
+  issuedPermissions  EquipmentListPermission[] @relation("PermissionGrantedBy")
+  assignmentActions  AssignmentHistory[]       @relation("AssignmentActor")
+  onboardingSesje    OnboardingSesja[]
+
+  @@map("app_users")
+}
+
+// ---------------------------------------------------------------------------
+// Sprzęt
+// ---------------------------------------------------------------------------
+
+model Computer {
+  id                   Int       @id @default(autoincrement())
+  numerEwidencyjny     String    @unique
+  numerSeryjny         String
+  typ                  String // ComputerType
+  cpu                  String
+  ramIloscGb           Int
+  ramRodzaj            String // RamType
+  markaModel           String
+  pojemnoscDysku       String
+  macEthernet          String?
+  macWifi              String?
+  notatki              String?
+  dataZakupu           DateTime?
+  dataKoncaGwarancji   DateTime?
+  kosztBruttoGrosze    Int?
+  aktualnyUzytkownikId Int?
+  wycofany             Boolean   @default(false)
+  dataWycofania        DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  aktualnyUzytkownik Employee?         @relation(fields: [aktualnyUzytkownikId], references: [id])
+  onboardingSesje    OnboardingSesja[]
+
+  @@index([aktualnyUzytkownikId])
+  @@map("computers")
+}
+
+model Monitor {
+  id                   Int       @id @default(autoincrement())
+  numerEwidencyjny     String    @unique
+  numerSeryjny         String
+  markaModel           String
+  zlacza               String
+  proporcjeEkranu      String
+  wielkoscEkranu       Float
+  aktualnyUzytkownikId Int?
+  wycofany             Boolean   @default(false)
+  dataWycofania        DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  aktualnyUzytkownik Employee? @relation(fields: [aktualnyUzytkownikId], references: [id])
+
+  @@index([aktualnyUzytkownikId])
+  @@map("monitors")
+}
+
+model Mouse {
+  id                   Int       @id @default(autoincrement())
+  numerEwidencyjny     String    @unique
+  numerSeryjny         String
+  markaModel           String
+  czyZestaw            Boolean   @default(false)
+  aktualnyUzytkownikId Int?
+  wycofany             Boolean   @default(false)
+  dataWycofania        DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  aktualnyUzytkownik Employee?       @relation(fields: [aktualnyUzytkownikId], references: [id])
+  pair               PeripheralPair?
+
+  @@index([aktualnyUzytkownikId])
+  @@map("mice")
+}
+
+model Keyboard {
+  id                   Int       @id @default(autoincrement())
+  numerEwidencyjny     String    @unique
+  numerSeryjny         String
+  markaModel           String
+  czyZestaw            Boolean   @default(false)
+  aktualnyUzytkownikId Int?
+  wycofany             Boolean   @default(false)
+  dataWycofania        DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  aktualnyUzytkownik Employee?       @relation(fields: [aktualnyUzytkownikId], references: [id])
+  pair               PeripheralPair?
+
+  @@index([aktualnyUzytkownikId])
+  @@map("keyboards")
+}
+
+/// Parowanie mysz<->klawiatura jako osobna tabela złączeniowa (jedno źródło prawdy),
+/// zamiast wzajemnych FK po obu stronach które trzeba by ręcznie synchronizować.
+model PeripheralPair {
+  id         Int @id @default(autoincrement())
+  mouseId    Int @unique
+  keyboardId Int @unique
+
+  mouse    Mouse    @relation(fields: [mouseId], references: [id])
+  keyboard Keyboard @relation(fields: [keyboardId], references: [id])
+
+  @@map("peripheral_pairs")
+}
+
+model Phone {
+  id                   Int       @id @default(autoincrement())
+  numerEwidencyjny     String    @unique
+  numerSeryjny         String
+  markaModel           String
+  typ                  String // PhoneType
+  imei                 String
+  kodOdblokowania      String?
+  dataZakupu           DateTime?
+  dataKoncaGwarancji   DateTime?
+  kosztBruttoGrosze    Int?
+  simCardId            Int?      @unique
+  aktualnyUzytkownikId Int?
+  wycofany             Boolean   @default(false)
+  dataWycofania        DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  simCard            SimCard?  @relation(fields: [simCardId], references: [id])
+  aktualnyUzytkownik Employee? @relation(fields: [aktualnyUzytkownikId], references: [id])
+
+  @@index([aktualnyUzytkownikId])
+  @@map("phones")
+}
+
+model SimCard {
+  id                    Int       @id @default(autoincrement())
+  iccid                 String    @unique
+  numerTelefonu         String
+  pin1                  String?
+  pin2                  String?
+  puk1                  String?
+  puk2                  String?
+  taryfa                String
+  kosztMiesiecznyGrosze Int
+  dataKoncaUmowy        DateTime
+  aktualnyUzytkownikId  Int?
+  wycofany              Boolean   @default(false)
+  dataWycofania         DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  aktualnyUzytkownik Employee? @relation(fields: [aktualnyUzytkownikId], references: [id])
+  phone              Phone?
+
+  @@index([aktualnyUzytkownikId])
+  @@map("sim_cards")
+}
+
+/// Drukarka nie ma pojęcia "użytkownika" — ma lokalizację (dział/piętro/miejsce).
+/// Jej historia (AssignmentHistory) śledzi zmiany lokalizacji, nie osoby.
+model Printer {
+  id                 Int       @id @default(autoincrement())
+  numerEwidencyjny   String    @unique
+  numerSeryjny       String
+  markaModel         String
+  dzialPietroMiejsce String
+  adresIP            String?
+  mac                String?
+  dataZakupu         DateTime?
+  dataKoncaGwarancji DateTime?
+  kosztBruttoGrosze  Int?
+  wycofany           Boolean   @default(false)
+  dataWycofania      DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tonery PrinterToner[]
+
+  @@map("printers")
+}
+
+model Toner {
+  id         Int      @id @default(autoincrement())
+  oznaczenie String
+  ilosc      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  drukarki PrinterToner[]
+
+  @@map("toners")
+}
+
+/// Relacja wiele-do-wielu: toner pasuje do wielu drukarek, drukarka może używać wielu tonerów.
+model PrinterToner {
+  id        Int @id @default(autoincrement())
+  printerId Int
+  tonerId   Int
+
+  printer Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  toner   Toner   @relation(fields: [tonerId], references: [id], onDelete: Cascade)
+
+  @@unique([printerId, tonerId])
+  @@map("printer_toners")
+}
+
+// ---------------------------------------------------------------------------
+// Historia przypisań (generyczna, wszystkie 7 typów sprzętu)
+// ---------------------------------------------------------------------------
+
+/// Jedna generyczna tabela historii zamiast osobnej per typ sprzętu — dyskryminator
+/// `sprzetTyp` + `sprzetId` wskazuje na konkretny rekord we właściwej tabeli.
+/// Reguła serwisowa (egzekwowana w kodzie, nie przez FK): co najwyżej jeden otwarty
+/// wpis (`dataDo IS NULL`) na dany (sprzetTyp, sprzetId) w danym momencie.
+model AssignmentHistory {
+  id                Int       @id @default(autoincrement())
+  sprzetTyp         String // EquipmentType
+  sprzetId          Int
+  uzytkownikId      Int? // null tylko dla wpisów DRUKARKA (śledzą lokalizację, nie osobę)
+  lokalizacja       String? // używane wyłącznie dla sprzetTyp = 'DRUKARKA'
+  dataOd            DateTime  @default(now())
+  dataDo            DateTime? // null = wpis aktualnie obowiązujący
+  notatka           String?
+  utworzylAppUserId Int?
+
+  uzytkownik      Employee? @relation(fields: [uzytkownikId], references: [id])
+  utworzylAppUser AppUser?  @relation("AssignmentActor", fields: [utworzylAppUserId], references: [id])
+
+  @@index([sprzetTyp, sprzetId])
+  @@index([uzytkownikId])
+  @@map("assignment_history")
+}
+
+// ---------------------------------------------------------------------------
+// Faktury (M:N ze sprzętem dowolnego typu — jedna faktura może obejmować
+// wiele sztuk sprzętu naraz, np. partię zakupionych monitorów)
+// ---------------------------------------------------------------------------
+
+/// Faktura zakupowa. Załączniki (PDF/XML) trzymane na dysku (server/uploads/faktury) —
+/// w bazie tylko wygenerowana nazwa pliku, patrz server/src/modules/faktury.
+model Faktura {
+  id          Int      @id @default(autoincrement())
+  numer       String
+  numerKsef   String?
+  kwotaGrosze Int
+  plikPdf     String?
+  plikXml     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pozycje FakturaPozycja[]
+
+  @@map("faktury")
+}
+
+/// Pozycja łącząca fakturę z konkretną sztuką sprzętu — ten sam wzorzec
+/// dyskryminatora (sprzetTyp + sprzetId) co AssignmentHistory/EquipmentListItem,
+/// bo Prisma+SQLite nie wspiera relacji polimorficznych.
+model FakturaPozycja {
+  id        Int      @id @default(autoincrement())
+  fakturaId Int
+  sprzetTyp String // EquipmentType
+  sprzetId  Int
+  createdAt DateTime @default(now())
+
+  faktura Faktura @relation(fields: [fakturaId], references: [id], onDelete: Cascade)
+
+  @@unique([fakturaId, sprzetTyp, sprzetId])
+  @@index([sprzetTyp, sprzetId])
+  @@map("faktura_pozycje")
+}
+
+// ---------------------------------------------------------------------------
+// Spisy sprzętu per dział (ręcznie kurowane) i uprawnienia
+// ---------------------------------------------------------------------------
+
+model EquipmentList {
+  id                Int      @id @default(autoincrement())
+  nazwa             String
+  dzialId           Int
+  opis              String?
+  createdAt         DateTime @default(now())
+  utworzylAppUserId Int
+
+  dzial           Department @relation(fields: [dzialId], references: [id])
+  utworzylAppUser AppUser    @relation("ListCreator", fields: [utworzylAppUserId], references: [id])
+
+  items       EquipmentListItem[]
+  permissions EquipmentListPermission[]
+
+  @@index([dzialId])
+  @@map("equipment_lists")
+}
+
+/// Pozycja spisu — ręcznie dodana referencja do sztuki sprzętu (dowolnego z 7 typów).
+model EquipmentListItem {
+  id             Int      @id @default(autoincrement())
+  listId         Int
+  sprzetTyp      String // EquipmentType
+  sprzetId       Int
+  dodanoAt       DateTime @default(now())
+  dodalAppUserId Int?
+
+  list         EquipmentList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  dodalAppUser AppUser?      @relation("ListItemAdder", fields: [dodalAppUserId], references: [id])
+
+  @@unique([listId, sprzetTyp, sprzetId])
+  @@map("equipment_list_items")
+}
+
+/// Uprawnienie użytkownika aplikacji do konkretnego spisu (VIEW/EDIT). Admin ma dostęp
+/// do wszystkiego niezależnie od tej tabeli (bypass w warstwie autoryzacji).
+model EquipmentListPermission {
+  id             Int      @id @default(autoincrement())
+  listId         Int
+  appUserId      Int
+  poziom         String // PermissionLevel: 'VIEW' | 'EDIT'
+  nadanoAt       DateTime @default(now())
+  nadalAppUserId Int?
+
+  list         EquipmentList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  appUser      AppUser       @relation("PermissionGrantedTo", fields: [appUserId], references: [id])
+  nadalAppUser AppUser?      @relation("PermissionGrantedBy", fields: [nadalAppUserId], references: [id])
+
+  @@unique([listId, appUserId])
+  @@map("equipment_list_permissions")
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding komputerów — generator skryptów PowerShell (katalog programów,
+// profile, ustawienia i wygenerowane sesje z jednorazowym linkiem)
+// ---------------------------------------------------------------------------
+
+/// Pozycja katalogu programów instalowanych przez skrypt onboardingu: pakiet winget
+/// albo własny plik instalacyjny wgrany do aplikacji (np. instalator ESET z konsoli
+/// firmy). Plik leży na dysku w server/uploads/instalatory pod losową nazwą.
+model Oprogramowanie {
+  id          Int      @id @default(autoincrement())
+  nazwa       String
+  zrodlo      String   @default("WINGET") // OprogramowanieZrodlo: 'WINGET' | 'PLIK'
+  wingetId    String?  @unique // tylko zrodlo = WINGET
+  plik        String? // nazwa pliku na dysku — tylko zrodlo = PLIK
+  plikNazwa   String? // oryginalna nazwa — pod nią instalator trafia na laptopa
+  plikRozmiar Int? // bajty (limit uploadu 1 GB mieści się w Int)
+  plikSha256  String? // skrypt weryfikuje sumę przed uruchomieniem
+  argumenty   String? // parametry cichej instalacji, np. "/qn /norestart" dla MSI
+  opis        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  profile ProfilOprogramowaniaPozycja[]
+
+  @@map("oprogramowanie")
+}
+
+/// Gotowy zestaw programów (np. "Standard biurowy"). Opcjonalny dział = profil
+/// podpowiadany domyślnie przy onboardingu pracownika z tego działu.
+model ProfilOprogramowania {
+  id        Int      @id @default(autoincrement())
+  nazwa     String   @unique
+  opis      String?
+  dzialId   Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dzial   Department?                   @relation(fields: [dzialId], references: [id], onDelete: SetNull)
+  pozycje ProfilOprogramowaniaPozycja[]
+
+  @@map("profile_oprogramowania")
+}
+
+model ProfilOprogramowaniaPozycja {
+  id               Int @id @default(autoincrement())
+  profilId         Int
+  oprogramowanieId Int
+
+  profil         ProfilOprogramowania @relation(fields: [profilId], references: [id], onDelete: Cascade)
+  oprogramowanie Oprogramowanie       @relation(fields: [oprogramowanieId], references: [id], onDelete: Cascade)
+
+  @@unique([profilId, oprogramowanieId])
+  @@map("profil_oprogramowania_pozycje")
+}
+
+/// Ustawienia globalne onboardingu — pojedynczy wiersz (id = 1).
+model UstawieniaOnboardingu {
+  id             Int      @id @default(1)
+  komunikatTytul String   @default("")
+  komunikatTresc String   @default("")
+  updatedAt      DateTime @updatedAt
+
+  @@map("ustawienia_onboardingu")
+}
+
+/// Wygenerowany skrypt onboardingu dla konkretnego komputera i pracownika.
+/// `konfiguracja` to migawka JSON wybranych opcji (programy, komunikat, login…) —
+/// późniejsze zmiany w katalogu nie zmieniają już wygenerowanego skryptu.
+/// `token` = krótki kod do jednolinijkowca `irm …/start/<token> | iex`.
+model OnboardingSesja {
+  id                Int       @id @default(autoincrement())
+  token             String    @unique
+  computerId        Int
+  employeeId        Int
+  tryb              String // OnboardingTryb: 'HOME' | 'PRO'
+  konfiguracja      String
+  wygasaAt          DateTime
+  pobranoAt         DateTime?
+  createdAt         DateTime  @default(now())
+  utworzylAppUserId Int?
+
+  computer        Computer @relation(fields: [computerId], references: [id], onDelete: Cascade)
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  utworzylAppUser AppUser? @relation(fields: [utworzylAppUserId], references: [id], onDelete: SetNull)
+
+  @@index([computerId])
+  @@map("onboarding_sesje")
+}

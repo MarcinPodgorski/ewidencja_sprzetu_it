@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium
+      transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-500;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50
+      dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-500;
+  }
+
+  .input {
+    @apply block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset
+      ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600
+      dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600 dark:placeholder:text-gray-500;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+  .field-error {
+    @apply mt-1 text-sm text-red-600 dark:text-red-400;
+  }
+
+  .card {
+    @apply rounded-lg bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700;
+  }
+
+  .table-base {
+    @apply min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700;
+  }
+  .table-base th {
+    @apply px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300;
+  }
+  .table-base td {
+    @apply px-3 py-2 text-gray-800 dark:text-gray-200;
+  }
+  .table-base tbody tr {
+    @apply border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}

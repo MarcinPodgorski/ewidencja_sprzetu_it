@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+
+# sqlite db files (dev) — plik bazy żyje w server/prisma/data/ (patrz env.ts:
+# ścieżka DATABASE_URL jest jawnie rozwiązywana względem server/prisma/)
+server/prisma/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# załączniki faktur (PDF/XML) — patrz server/src/config/uploads.ts
+server/uploads/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor/OS
+.DS_Store
+.vscode/
+.idea/
+
+# misc
+coverage/
+.turbo/
+CLAUDE.md
