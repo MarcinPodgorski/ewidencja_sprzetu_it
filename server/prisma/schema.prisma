@@ -113,6 +113,8 @@ model Computer {
   ramRodzaj            String // RamType
   markaModel           String
   pojemnoscDysku       String
+  systemOperacyjny     String? // SystemOperacyjny, np. 'WINDOWS_11_PRO' — null = nie określono
+  wersjaSystemu        String? // dowolny opis wersji, np. "24H2", "Ubuntu 24.04 LTS"
   macEthernet          String?
   macWifi              String?
   notatki              String?

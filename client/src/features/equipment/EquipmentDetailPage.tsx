@@ -98,6 +98,8 @@ export function EquipmentDetailPage<
                 <dd className="font-medium text-gray-900 dark:text-gray-100">
                   {f.sensitive ? (
                     <MaskedField value={(item as Record<string, unknown>)[f.name] as string | null} />
+                  ) : f.renderDetail ? (
+                    f.renderDetail((item as Record<string, unknown>)[f.name])
                   ) : (
                     formatValue((item as Record<string, unknown>)[f.name], f)
                   )}

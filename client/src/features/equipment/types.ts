@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { ZodTypeAny } from 'zod';
 import type { EquipmentType } from 'shared';
 import type { Column } from '../../components/DataTable';
@@ -15,6 +15,9 @@ export interface EquipmentFormFieldConfig {
   sensitive?: boolean;
   /** Niestandardowe formatowanie wartości na stronie szczegółów (np. grosze -> "X,XX zł"). */
   displayFormat?: 'money';
+  /** Własny widok wartości na stronie szczegółów (np. logo systemu obok nazwy) — ma
+   *  pierwszeństwo przed `displayFormat` i domyślnym formatowaniem. */
+  renderDetail?: (value: unknown) => ReactNode;
 }
 
 export interface EquipmentLike {

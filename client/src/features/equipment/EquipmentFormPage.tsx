@@ -40,6 +40,10 @@ export function EquipmentFormPage<T extends EquipmentLike>({ config }: { config:
       if (f.displayFormat === 'money') {
         values[f.name] = groszeToPln(values[f.name]);
       }
+      // Opcjonalny select bez wartości (null z API) = opcja "Wybierz…", czyli "".
+      if (f.type === 'select' && values[f.name] === null) {
+        values[f.name] = '';
+      }
     }
     reset(values);
   }, [item, reset, config.formFields]);

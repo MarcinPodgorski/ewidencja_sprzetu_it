@@ -22,6 +22,10 @@ export {
   OPROGRAMOWANIE_ZRODLA,
   OPROGRAMOWANIE_ZRODLO_LABELS,
   INSTALATOR_ROZSZERZENIA,
+  SYSTEMY_OPERACYJNE,
+  SYSTEM_OPERACYJNY_LABELS,
+  rodzinaSystemu,
+  edycjaWindowsa,
 } from './enums';
 export type {
   ComputerType,
@@ -32,6 +36,8 @@ export type {
   EquipmentType,
   OnboardingTryb,
   OprogramowanieZrodlo,
+  SystemOperacyjny,
+  RodzinaSystemu,
 } from './enums';
 
 export {

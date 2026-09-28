@@ -103,3 +103,45 @@ export const OPROGRAMOWANIE_ZRODLO_LABELS: Record<OprogramowanieZrodlo, string> 
 
 /** Rozszerzenia instalatorów obsługiwanych przez skrypt (sposób uruchomienia zależy od typu). */
 export const INSTALATOR_ROZSZERZENIA = ['.msi', '.exe', '.bat', '.cmd', '.ps1'] as const;
+
+/** System operacyjny komputera — edycja Windowsa ma znaczenie (np. dla trybu onboardingu). */
+export const SYSTEMY_OPERACYJNE = [
+  'WINDOWS_11_PRO',
+  'WINDOWS_11_HOME',
+  'WINDOWS_10_PRO',
+  'WINDOWS_10_HOME',
+  'WINDOWS_SERVER',
+  'MACOS',
+  'LINUX',
+  'CHROMEOS',
+  'INNY',
+] as const;
+export type SystemOperacyjny = (typeof SYSTEMY_OPERACYJNE)[number];
+
+export const SYSTEM_OPERACYJNY_LABELS: Record<SystemOperacyjny, string> = {
+  WINDOWS_11_PRO: 'Windows 11 Pro',
+  WINDOWS_11_HOME: 'Windows 11 Home',
+  WINDOWS_10_PRO: 'Windows 10 Pro',
+  WINDOWS_10_HOME: 'Windows 10 Home',
+  WINDOWS_SERVER: 'Windows Server',
+  MACOS: 'macOS',
+  LINUX: 'Linux',
+  CHROMEOS: 'ChromeOS',
+  INNY: 'Inny',
+};
+
+export type RodzinaSystemu = 'WINDOWS' | 'MACOS' | 'LINUX' | 'CHROMEOS' | 'INNY';
+
+/** Rodzina systemu — np. do wyboru ikony (wszystkie Windowsy mają to samo logo). */
+export function rodzinaSystemu(system: SystemOperacyjny): RodzinaSystemu {
+  if (system.startsWith('WINDOWS')) return 'WINDOWS';
+  if (system === 'MACOS' || system === 'LINUX' || system === 'CHROMEOS') return system;
+  return 'INNY';
+}
+
+/** Edycja Windowsa dla trybu skryptu onboardingu, albo null dla pozostałych systemów. */
+export function edycjaWindowsa(system: SystemOperacyjny | null | undefined): 'HOME' | 'PRO' | null {
+  if (system === 'WINDOWS_11_HOME' || system === 'WINDOWS_10_HOME') return 'HOME';
+  if (system === 'WINDOWS_11_PRO' || system === 'WINDOWS_10_PRO') return 'PRO';
+  return null;
+}

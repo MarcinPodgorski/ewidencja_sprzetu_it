@@ -121,6 +121,8 @@ async function main() {
       ramRodzaj: 'DDR5',
       markaModel: 'Dell Latitude 5440',
       pojemnoscDysku: '512GB SSD',
+      systemOperacyjny: 'WINDOWS_11_PRO',
+      wersjaSystemu: '24H2',
       macEthernet: '00:1A:2B:3C:4D:5E',
       macWifi: '00:1A:2B:3C:4D:5F',
       notatki: 'Laptop służbowy, gwarancja do 2027',
@@ -142,10 +144,43 @@ async function main() {
       ramRodzaj: 'DDR4',
       markaModel: 'HP ProDesk 400 G7',
       pojemnoscDysku: '1TB SSD',
+      systemOperacyjny: 'WINDOWS_10_PRO',
+      wersjaSystemu: '22H2',
       aktualnyUzytkownikId: kZielinska.id,
     },
   });
   await assign('KOMPUTER', komputer2.id, kZielinska.id);
+
+  // Nieprzypisane — pokazują pozostałe ikony systemów na liście komputerów.
+  await prisma.computer.create({
+    data: {
+      numerEwidencyjny: 'KOMP-003',
+      numerSeryjny: 'SN-CMP-0003',
+      typ: 'LAPTOP',
+      cpu: 'Apple M3',
+      ramIloscGb: 16,
+      ramRodzaj: 'INNY',
+      markaModel: 'MacBook Air 13"',
+      pojemnoscDysku: '512GB SSD',
+      systemOperacyjny: 'MACOS',
+      wersjaSystemu: 'Sequoia 15',
+    },
+  });
+  await prisma.computer.create({
+    data: {
+      numerEwidencyjny: 'KOMP-004',
+      numerSeryjny: 'SN-SRV-0001',
+      typ: 'SERWER',
+      cpu: 'Intel Xeon E-2334',
+      ramIloscGb: 32,
+      ramRodzaj: 'DDR4',
+      markaModel: 'Dell PowerEdge T150',
+      pojemnoscDysku: '2x 2TB HDD (RAID 1)',
+      systemOperacyjny: 'LINUX',
+      wersjaSystemu: 'Ubuntu 24.04 LTS',
+      notatki: 'Serwer plików',
+    },
+  });
 
   console.log('Tworzenie monitorów...');
   const monitor1 = await prisma.monitor.create({

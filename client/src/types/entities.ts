@@ -1,4 +1,12 @@
-import type { AppUserRole, ComputerType, OnboardingTryb, OprogramowanieZrodlo, PhoneType, RamType } from 'shared';
+import type {
+  AppUserRole,
+  ComputerType,
+  OnboardingTryb,
+  OprogramowanieZrodlo,
+  PhoneType,
+  RamType,
+  SystemOperacyjny,
+} from 'shared';
 
 export interface Department {
   id: number;
@@ -54,6 +62,9 @@ export interface Computer extends EquipmentBase, PurchaseInfo {
   ramIloscGb: number;
   ramRodzaj: RamType;
   pojemnoscDysku: string;
+  systemOperacyjny: SystemOperacyjny | null;
+  /** Wolny tekst, np. "24H2", "Ubuntu 24.04 LTS", "Sequoia 15". */
+  wersjaSystemu: string | null;
   macEthernet: string | null;
   macWifi: string | null;
   notatki: string | null;

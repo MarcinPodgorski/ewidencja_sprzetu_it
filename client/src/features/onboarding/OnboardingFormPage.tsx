@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ONBOARDING_TRYB_LABELS, onboardingSesjaCreateSchema, type OnboardingTryb } from 'shared';
+import {
+  ONBOARDING_TRYB_LABELS,
+  SYSTEM_OPERACYJNY_LABELS,
+  edycjaWindowsa,
+  onboardingSesjaCreateSchema,
+  rodzinaSystemu,
+  type OnboardingTryb,
+} from 'shared';
 import { PageHeader } from '../../components/PageHeader';
 import { ApiError } from '../../lib/api';
 import { computersApi, employeesApi, oprogramowanieApi, profileOprogramowaniaApi } from '../entities';
@@ -42,11 +49,14 @@ export function OnboardingFormPage() {
 
   const pracownik = useMemo(() => pracownicy?.find((p) => p.id === Number(employeeId)), [pracownicy, employeeId]);
 
-  // Start: nazwa komputera = numer ewidencyjny, pracownik = obecny użytkownik komputera.
+  // Start: nazwa komputera = numer ewidencyjny, pracownik = obecny użytkownik komputera,
+  // edycja Windowsa = system zapisany w ewidencji (jeśli to Home albo Pro).
   useEffect(() => {
     if (!computer) return;
     setNazwaKomputera(computer.numerEwidencyjny);
     if (computer.aktualnyUzytkownikId) setEmployeeId(String(computer.aktualnyUzytkownikId));
+    const edycja = edycjaWindowsa(computer.systemOperacyjny);
+    if (edycja) setTryb(edycja);
   }, [computer]);
 
   // Zmiana pracownika podpowiada login, e-mail, komunikat i profil jego działu.
@@ -126,6 +136,12 @@ export function OnboardingFormPage() {
   }
 
   const przypisanyDoKogosInnego = computer.aktualnyUzytkownikId !== null && computer.aktualnyUzytkownikId !== Number(employeeId);
+  const systemKomputera = computer.systemOperacyjny;
+  const nazwaSystemu = systemKomputera ? SYSTEM_OPERACYJNY_LABELS[systemKomputera] : null;
+  const edycjaZEwidencji = edycjaWindowsa(systemKomputera);
+  // Windows Server i systemy spoza Windowsa — skrypt nie jest dla nich przygotowany.
+  const systemNieobslugiwany =
+    systemKomputera !== null && systemKomputera !== 'INNY' && (rodzinaSystemu(systemKomputera) !== 'WINDOWS' || !edycjaZEwidencji);
 
   return (
     <div className="max-w-3xl">
@@ -183,6 +199,27 @@ export function OnboardingFormPage() {
               ))}
             </div>
             {bledy.tryb && <p className="field-error">{bledy.tryb}</p>}
+            {!bledy.tryb && systemNieobslugiwany && (
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                W ewidencji ten komputer ma system {nazwaSystemu} — skrypt onboardingu jest przygotowany pod Windows Home
+                i Pro.
+              </p>
+            )}
+            {!bledy.tryb && edycjaZEwidencji && tryb === edycjaZEwidencji && (
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                Zaznaczone na podstawie ewidencji: {nazwaSystemu}.
+              </p>
+            )}
+            {!bledy.tryb && edycjaZEwidencji && tryb !== '' && tryb !== edycjaZEwidencji && (
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                W ewidencji ten komputer ma system {nazwaSystemu} — sprawdź, czy wybrana edycja się zgadza.
+              </p>
+            )}
+            {!bledy.tryb && systemKomputera === null && (
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                Uzupełnij system operacyjny w danych komputera, a edycja zaznaczy się tu sama.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

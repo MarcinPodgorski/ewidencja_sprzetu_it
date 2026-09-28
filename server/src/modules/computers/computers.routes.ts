@@ -7,7 +7,7 @@ export const computersRouter = createEquipmentRouter({
   delegate: prisma.computer,
   createSchema: computerCreateSchema,
   updateSchema: computerUpdateSchema,
-  searchFields: ['numerEwidencyjny', 'numerSeryjny', 'markaModel', 'cpu'],
+  searchFields: ['numerEwidencyjny', 'numerSeryjny', 'markaModel', 'cpu', 'wersjaSystemu'],
   modelName: 'computer',
-  filterableFields: ['typ', 'ramRodzaj'],
+  filterableFields: ['typ', 'ramRodzaj', 'systemOperacyjny'],
 });

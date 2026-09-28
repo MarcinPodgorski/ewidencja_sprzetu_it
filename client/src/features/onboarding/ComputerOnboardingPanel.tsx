@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { rodzinaSystemu } from 'shared';
 import type { Computer } from '../../types/entities';
 import { useOnboardingSesje } from './onboarding.hooks';
 import { OnboardingSesjeTable } from './OnboardingSesjeTable';
@@ -8,11 +9,17 @@ export function ComputerOnboardingPanel({ item }: { item: Computer }) {
   const navigate = useNavigate();
   const { data: sesje, isLoading } = useOnboardingSesje(item.id);
 
+  // Skrypt jest dla Windowsa — przy Macu/Linuksie/ChromeOS sekcję pokazujemy tylko wtedy,
+  // gdy komputer ma już historię sesji (np. system zmieniono w ewidencji później).
+  const innySystem =
+    item.systemOperacyjny !== null && !['WINDOWS', 'INNY'].includes(rodzinaSystemu(item.systemOperacyjny));
+  if (innySystem && !sesje?.length) return null;
+
   return (
     <div className="mt-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Onboarding</h2>
-        {!item.wycofany && (
+        {!item.wycofany && !innySystem && (
           <button type="button" className="btn-secondary" onClick={() => navigate(`/computers/${item.id}/onboarding`)}>
             Przygotuj skrypt onboardingu
           </button>

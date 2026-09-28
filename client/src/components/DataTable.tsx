@@ -42,7 +42,8 @@ export function DataTable<T>({ columns, items, isLoading, getRowKey, onRowClick,
             <tr
               key={getRowKey(item)}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
-              className={onRowClick ? 'cursor-pointer' : ''}
+              // `group` pozwala komórkom reagować na najechanie na cały wiersz (np. ikonka systemu).
+              className={onRowClick ? 'group cursor-pointer' : 'group'}
             >
               {columns.map((col) => (
                 <td key={col.key} className={col.className}>
