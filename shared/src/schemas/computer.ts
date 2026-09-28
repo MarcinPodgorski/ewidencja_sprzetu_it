@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  emptyToNull,
   kosztBruttoGroszeSchema,
   macAddressSchema,
   markaModelSchema,
@@ -20,8 +21,7 @@ export const computerCreateSchema = z.object({
   ramRodzaj: z.enum(RAM_TYPES),
   markaModel: markaModelSchema,
   pojemnoscDysku: requiredString('Pojemność dysku', 64),
-  /** Pusty wybór = null (nie undefined) — inaczej wyczyszczenia pola w edycji nie dałoby się zapisać. */
-  systemOperacyjny: z.preprocess((val) => (val === '' ? null : val), z.enum(SYSTEMY_OPERACYJNE).nullish()),
+  systemOperacyjny: emptyToNull(z.enum(SYSTEMY_OPERACYJNE).nullish()),
   wersjaSystemu: optionalString(100),
   macEthernet: macAddressSchema,
   macWifi: macAddressSchema,

@@ -11,12 +11,25 @@ export type IdParam = z.infer<typeof idParamSchema>;
  * był traktowany jak "brak wartości" zamiast trafiać do właściwej walidacji (np. regex),
  * gdzie pusty string prawie zawsze by nie przeszedł. Musi opakowywać schemat, który sam
  * akceptuje `undefined` (np. `.nullish()`/`.optional()`).
+ *
+ * Tylko dla pól, których później się nie edytuje (np. jednorazowe tworzenie sesji) —
+ * `undefined` w PUT znaczy "nie zmieniaj", więc wyczyszczenie pola w edycji by się nie
+ * zapisało. Pola edytowalne owijaj w `emptyToNull`.
  */
 export const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((val) => (val === '' ? undefined : val), schema);
 
+/**
+ * Jak `emptyToUndefined`, ale pusty (lub z samych spacji) string -> `null`. Dla opcjonalnych
+ * pól, które można edytować: wyczyszczone pole musi dotrzeć do Prismy jako `null` ("usuń
+ * wartość"), bo `undefined` Prisma pomija przy update — zapis by "przeszedł", a stara
+ * wartość została. Schemat musi akceptować `null` (np. `.nullish()`).
+ */
+export const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((val) => (typeof val === 'string' && val.trim() === '' ? null : val), schema);
+
 /** Adres MAC w formacie AA:BB:CC:DD:EE:FF (wielkość liter dowolna), pole opcjonalne. */
-export const macAddressSchema = emptyToUndefined(
+export const macAddressSchema = emptyToNull(
   z
     .string()
     .regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, 'Nieprawidłowy format adresu MAC (AA:BB:CC:DD:EE:FF)')
@@ -44,7 +57,7 @@ export const markaModelSchema = requiredString('Marka/model', 128);
  * (numer, KSeF, kwota, załączniki) żyje osobno w module Faktury — patrz
  * shared/src/schemas/faktura.ts — bo jedna faktura może obejmować wiele sztuk sprzętu.
  */
-export const optionalDateSchema = emptyToUndefined(z.coerce.date().nullish());
-export const kosztBruttoGroszeSchema = emptyToUndefined(
+export const optionalDateSchema = emptyToNull(z.coerce.date().nullish());
+export const kosztBruttoGroszeSchema = emptyToNull(
   z.coerce.number().int().nonnegative('Koszt nie może być ujemny').nullish(),
 );

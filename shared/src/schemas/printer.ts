@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  emptyToUndefined,
+  emptyToNull,
   kosztBruttoGroszeSchema,
   macAddressSchema,
   markaModelSchema,
@@ -15,7 +15,7 @@ export const printerCreateSchema = z.object({
   numerSeryjny: numerSeryjnySchema,
   markaModel: markaModelSchema,
   dzialPietroMiejsce: requiredString('Dział/piętro/miejsce', 150),
-  adresIP: emptyToUndefined(
+  adresIP: emptyToNull(
     z
       .string()
       .trim()

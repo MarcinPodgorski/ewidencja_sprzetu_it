@@ -13,6 +13,14 @@ export function plnToGrosze(raw: string): number | undefined {
   return Math.round(n * 100);
 }
 
+/** Jak `plnToGrosze`, ale puste pole -> `null`: dla kwot opcjonalnych, żeby wyczyszczenie
+ *  pola w edycji dotarło do API jako "usuń kwotę" (`undefined` oznacza "nie zmieniaj").
+ *  Nie dla kwot wymaganych — `z.coerce.number()` zamieniłby `null` na 0 zamiast błędu. */
+export function plnToGroszeOrNull(raw: string): number | null | undefined {
+  if (raw === '' || raw === null || raw === undefined) return null;
+  return plnToGrosze(raw);
+}
+
 /** Grosze z API -> PLN do wstawienia jako wartość edytowalnego pola formularza. */
 export function groszeToPln(value: unknown): number | undefined {
   if (typeof value !== 'number') return undefined;

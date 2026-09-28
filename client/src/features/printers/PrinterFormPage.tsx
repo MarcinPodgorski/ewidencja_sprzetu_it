@@ -6,7 +6,7 @@ import { printerCreateSchema, printerUpdateSchema } from 'shared';
 import { PageHeader } from '../../components/PageHeader';
 import { TextField } from '../../components/form/fields';
 import { ApiError } from '../../lib/api';
-import { groszeToPln, plnToGrosze } from '../../lib/money';
+import { groszeToPln, plnToGroszeOrNull } from '../../lib/money';
 import { printersApi } from '../entities';
 
 /** Pola dat wymagają dokładnie "RRRR-MM-DD" w <input type="date">, API zwraca pełny ISO datetime. */
@@ -103,7 +103,7 @@ export function PrinterFormPage() {
           type="number"
           step="0.01"
           placeholder="0.00"
-          registration={register('kosztBruttoGrosze', { setValueAs: plnToGrosze })}
+          registration={register('kosztBruttoGrosze', { setValueAs: plnToGroszeOrNull })}
           error={fieldErrors.kosztBruttoGrosze as never}
         />
 

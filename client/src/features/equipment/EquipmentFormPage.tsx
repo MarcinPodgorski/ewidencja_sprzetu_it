@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../components/PageHeader';
 import { CheckboxField, SelectField, TextField, TextareaField } from '../../components/form/fields';
 import { ApiError } from '../../lib/api';
-import { groszeToPln, plnToGrosze } from '../../lib/money';
+import { groszeToPln, plnToGrosze, plnToGroszeOrNull } from '../../lib/money';
 import type { EquipmentLike, EquipmentTypeConfig } from './types';
 
 export function EquipmentFormPage<T extends EquipmentLike>({ config }: { config: EquipmentTypeConfig<T> }) {
@@ -76,7 +76,7 @@ export function EquipmentFormPage<T extends EquipmentLike>({ config }: { config:
           const registration = register(
             f.name,
             f.displayFormat === 'money'
-              ? { setValueAs: plnToGrosze }
+              ? { setValueAs: f.required ? plnToGrosze : plnToGroszeOrNull }
               : f.type === 'number'
                 ? { valueAsNumber: true }
                 : undefined,

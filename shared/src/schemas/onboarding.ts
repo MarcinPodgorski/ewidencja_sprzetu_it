@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ONBOARDING_TRYBY } from '../enums';
-import { emptyToUndefined, optionalString, requiredString } from './common';
+import { emptyToNull, emptyToUndefined, optionalString, requiredString } from './common';
 
 /** ID pakietu winget, np. "Google.Chrome", "7zip.7zip", "Notepad++.Notepad++". */
 export const WINGET_ID_REGEX = /^[A-Za-z0-9][A-Za-z0-9.+_-]*$/;
@@ -42,7 +42,7 @@ export type OprogramowanieUpdateInput = z.infer<typeof oprogramowanieUpdateSchem
 export const profilOprogramowaniaCreateSchema = z.object({
   nazwa: requiredString('Nazwa profilu', 100),
   opis: optionalString(500),
-  dzialId: emptyToUndefined(z.coerce.number().int().positive().nullish()),
+  dzialId: emptyToNull(z.coerce.number().int().positive().nullish()),
   oprogramowanieIds: z.array(z.coerce.number().int().positive()).default([]),
 });
 export type ProfilOprogramowaniaCreateInput = z.infer<typeof profilOprogramowaniaCreateSchema>;

@@ -45,6 +45,7 @@ export {
   macAddressSchema,
   requiredString,
   optionalString,
+  emptyToNull,
   emptyToUndefined,
   numerEwidencyjnySchema,
   numerSeryjnySchema,

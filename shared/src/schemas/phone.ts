@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  emptyToUndefined,
+  emptyToNull,
   kosztBruttoGroszeSchema,
   markaModelSchema,
   numerEwidencyjnySchema,
@@ -17,7 +17,7 @@ export const phoneCreateSchema = z.object({
   typ: z.enum(PHONE_TYPES),
   imei: requiredString('IMEI', 32),
   kodOdblokowania: z.string().trim().max(64).nullish(),
-  simCardId: emptyToUndefined(z.coerce.number().int().positive().nullish()),
+  simCardId: emptyToNull(z.coerce.number().int().positive().nullish()),
   dataZakupu: optionalDateSchema,
   dataKoncaGwarancji: optionalDateSchema,
   kosztBruttoGrosze: kosztBruttoGroszeSchema,
