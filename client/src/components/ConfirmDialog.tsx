@@ -22,8 +22,8 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-      <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+    <div className="modal-overlay">
+      <div className="modal-panel w-full max-w-sm">
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
         {description && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{description}</p>}
         <div className="mt-5 flex justify-end gap-2">

@@ -1,4 +1,19 @@
 import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  CardSim,
+  ClipboardList,
+  KeyRound,
+  Keyboard,
+  Laptop,
+  Monitor,
+  Mouse,
+  Printer,
+  Smartphone,
+  TriangleAlert,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useDashboardStats } from '../features/dashboard/dashboard.hooks';
 
@@ -6,13 +21,34 @@ interface StatTileProps {
   label: string;
   value: number;
   to: string;
+  icon: LucideIcon;
+  /** Klasy gradientu kafelka ikony, np. "from-indigo-500 to-violet-500". */
+  kolor: string;
+  /** Pozycja kafelka — kafelki wchodzą kaskadowo, jeden po drugim. */
+  indeks: number;
 }
 
-function StatTile({ label, value, to }: StatTileProps) {
+function StatTile({ label, value, to, icon: Ikona, kolor, indeks }: StatTileProps) {
   return (
-    <Link to={to} className="card block transition-shadow hover:shadow-md">
-      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
+    <Link
+      to={to}
+      className="card card-interactive group relative block animate-page-in"
+      style={{ animationDelay: `${indeks * 45}ms` }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+          <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-gray-100">{value}</p>
+        </div>
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${kolor} text-white shadow-md transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110`}
+        >
+          <Ikona className="h-5 w-5" />
+        </span>
+      </div>
+      <span className="absolute bottom-3 right-5 inline-flex -translate-x-1 items-center gap-1 text-xs font-medium text-indigo-600 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:opacity-100 dark:text-indigo-300">
+        Przejdź <ArrowRight className="h-3 w-3" />
+      </span>
     </Link>
   );
 }
@@ -32,22 +68,22 @@ function AdminDashboard() {
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sprzęt w ewidencji</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <StatTile label="Komputery" value={counts.computers} to="/computers" />
-          <StatTile label="Monitory" value={counts.monitors} to="/monitors" />
-          <StatTile label="Myszy" value={counts.mice} to="/mice" />
-          <StatTile label="Klawiatury" value={counts.keyboards} to="/keyboards" />
-          <StatTile label="Telefony" value={counts.phones} to="/phones" />
-          <StatTile label="Karty SIM" value={counts.simCards} to="/sim-cards" />
-          <StatTile label="Drukarki" value={counts.printers} to="/printers" />
+          <StatTile label="Komputery" value={counts.computers} to="/computers" icon={Laptop} kolor="from-indigo-500 to-violet-500" indeks={0} />
+          <StatTile label="Monitory" value={counts.monitors} to="/monitors" icon={Monitor} kolor="from-sky-500 to-indigo-500" indeks={1} />
+          <StatTile label="Myszy" value={counts.mice} to="/mice" icon={Mouse} kolor="from-violet-500 to-fuchsia-500" indeks={2} />
+          <StatTile label="Klawiatury" value={counts.keyboards} to="/keyboards" icon={Keyboard} kolor="from-fuchsia-500 to-pink-500" indeks={3} />
+          <StatTile label="Telefony" value={counts.phones} to="/phones" icon={Smartphone} kolor="from-emerald-500 to-teal-500" indeks={4} />
+          <StatTile label="Karty SIM" value={counts.simCards} to="/sim-cards" icon={CardSim} kolor="from-amber-400 to-orange-500" indeks={5} />
+          <StatTile label="Drukarki" value={counts.printers} to="/printers" icon={Printer} kolor="from-rose-500 to-pink-500" indeks={6} />
         </div>
       </div>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Organizacja</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <StatTile label="Pracownicy" value={counts.employees} to="/employees" />
-          <StatTile label="Konta aplikacji" value={counts.appUsers} to="/app-users" />
-          <StatTile label="Spisy sprzętu" value={counts.equipmentLists} to="/equipment-lists" />
+          <StatTile label="Pracownicy" value={counts.employees} to="/employees" icon={Users} kolor="from-indigo-500 to-sky-500" indeks={7} />
+          <StatTile label="Konta aplikacji" value={counts.appUsers} to="/app-users" icon={KeyRound} kolor="from-slate-500 to-slate-700" indeks={8} />
+          <StatTile label="Spisy sprzętu" value={counts.equipmentLists} to="/equipment-lists" icon={ClipboardList} kolor="from-teal-500 to-emerald-500" indeks={9} />
         </div>
       </div>
 
@@ -58,7 +94,9 @@ function AdminDashboard() {
             {alerts.lowToners.length > 0 && (
               <div className="card">
                 <div className="mb-2 flex items-center gap-2">
-                  <span className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">⚠ niski stan</span>
+                  <span className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                    <TriangleAlert className="h-3 w-3" />
+                    niski stan</span>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Tonery/tusze na wyczerpaniu</h3>
                 </div>
                 <ul className="space-y-1 text-sm">
@@ -79,7 +117,9 @@ function AdminDashboard() {
             {alerts.expiringSimCards.length > 0 && (
               <div className="card">
                 <div className="mb-2 flex items-center gap-2">
-                  <span className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">⚠ umowa wygasa</span>
+                  <span className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                    <TriangleAlert className="h-3 w-3" />
+                    umowa wygasa</span>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Karty SIM — kończące się umowy</h3>
                 </div>
                 <ul className="space-y-1 text-sm">
@@ -106,7 +146,9 @@ export function DashboardPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-gray-900 dark:text-gray-100">Witaj, {user?.imie}!</h1>
+      <h1 className="mb-1 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        Witaj, <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent dark:from-indigo-300 dark:to-violet-300">{user?.imie}</span>! 👋
+      </h1>
       <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         {user?.rola === 'ADMIN'
           ? 'Przegląd ewidencji sprzętu IT.'

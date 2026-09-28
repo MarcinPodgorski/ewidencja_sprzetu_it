@@ -98,8 +98,8 @@ export function EquipmentListsPage() {
       />
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+        <div className="modal-overlay">
+          <div className="modal-panel w-full max-w-md">
             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">Nowy spis sprzętu</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <TextField label="Nazwa spisu" registration={register('nazwa')} error={errors.nazwa} required />

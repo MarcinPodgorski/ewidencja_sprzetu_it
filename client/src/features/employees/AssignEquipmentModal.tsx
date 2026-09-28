@@ -55,8 +55,8 @@ export function AssignEquipmentModal({ employeeId, onClose }: AssignEquipmentMod
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+    <div className="modal-overlay">
+      <div className="modal-panel w-full max-w-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Przypisz sprzęt</h2>
           <button

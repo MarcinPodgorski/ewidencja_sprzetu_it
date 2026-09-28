@@ -2,52 +2,167 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium
-      transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
   }
-  .btn-primary {
-    @apply btn bg-indigo-600 text-white hover:bg-indigo-500;
+  body {
+    @apply antialiased;
   }
-  .btn-secondary {
-    @apply btn bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50
-      dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700;
-  }
-  .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-500;
+  ::selection {
+    @apply bg-indigo-200/70 text-indigo-950 dark:bg-indigo-500/40 dark:text-white;
   }
 
+  /* Natywne checkboxy/radio w kolorze aplikacji + krótkie „pyknięcie” przy zaznaczeniu. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: theme('colors.indigo.600');
+  }
+  .dark input[type='checkbox'],
+  .dark input[type='radio'] {
+    accent-color: theme('colors.indigo.400');
+  }
+  input[type='checkbox']:checked,
+  input[type='radio']:checked {
+    @apply animate-pop;
+  }
+
+  /* Szanujemy systemowe „ogranicz ruch” — bez animacji i przejść. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ------------------------------------------------------------------ Przyciski */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium
+      transition duration-200 ease-out
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2
+      focus-visible:ring-offset-white active:scale-[0.97]
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100
+      dark:focus-visible:ring-offset-gray-900;
+  }
+  .btn-primary {
+    @apply btn relative overflow-hidden bg-gradient-to-r from-indigo-600 to-violet-600 text-white
+      shadow-md shadow-indigo-500/25 hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110
+      disabled:hover:translate-y-0 disabled:hover:shadow-md disabled:hover:brightness-100;
+  }
+  /* Delikatny błysk przesuwający się po przycisku przy najechaniu. */
+  .btn-primary::after,
+  .btn-danger::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .btn-primary:hover:not(:disabled)::after,
+  .btn-danger:hover:not(:disabled)::after {
+    transform: translateX(120%);
+  }
+  .btn-secondary {
+    @apply btn bg-white/80 text-gray-700 shadow-sm ring-1 ring-inset ring-gray-200 backdrop-blur
+      hover:-translate-y-px hover:bg-white hover:text-indigo-700 hover:shadow-md hover:shadow-indigo-500/10 hover:ring-indigo-200
+      disabled:hover:translate-y-0 disabled:hover:shadow-sm
+      dark:bg-white/5 dark:text-gray-200 dark:ring-white/10
+      dark:hover:bg-white/10 dark:hover:text-white dark:hover:ring-indigo-400/40;
+  }
+  .btn-danger {
+    @apply btn relative overflow-hidden bg-gradient-to-r from-rose-600 to-red-600 text-white
+      shadow-md shadow-rose-500/25 hover:-translate-y-px hover:shadow-lg hover:shadow-rose-500/30 hover:brightness-110
+      disabled:hover:translate-y-0 disabled:hover:shadow-md disabled:hover:brightness-100;
+  }
+
+  /* ------------------------------------------------------------------- Formularze */
   .input {
-    @apply block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset
-      ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600
-      dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600 dark:placeholder:text-gray-500;
+    @apply block w-full rounded-lg border-0 bg-white/90 px-3 py-2 text-sm text-gray-900 shadow-sm
+      ring-1 ring-inset ring-gray-200 transition duration-200 placeholder:text-gray-400 hover:ring-gray-300
+      focus:bg-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500
+      focus:shadow-[0_0_0_4px_rgb(99_102_241_/_0.12)]
+      file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-sm file:font-medium
+      file:text-indigo-700 file:transition-colors hover:file:bg-indigo-100
+      dark:bg-gray-900/60 dark:text-gray-100 dark:ring-white/10 dark:placeholder:text-gray-500
+      dark:hover:ring-white/20 dark:focus:bg-gray-900/80 dark:focus:ring-indigo-400
+      dark:file:bg-indigo-400/10 dark:file:text-indigo-300 dark:hover:file:bg-indigo-400/20;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300;
   }
   .field-error {
-    @apply mt-1 text-sm text-red-600 dark:text-red-400;
+    @apply mt-1 text-sm text-red-600 animate-fade-in dark:text-red-400;
   }
 
+  /* ------------------------------------------------------------------------ Karty */
   .card {
-    @apply rounded-lg bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700;
+    @apply rounded-xl bg-white/90 p-5 shadow-soft ring-1 ring-gray-900/5 transition-shadow duration-300
+      dark:bg-gray-900/70 dark:shadow-none dark:ring-white/10;
+  }
+  /* Karta-link: podniesienie przy najechaniu i lekkie „wciśnięcie” przy kliknięciu. */
+  .card-interactive {
+    @apply transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-soft-lg hover:ring-indigo-500/20
+      active:translate-y-0 active:scale-[0.99] dark:hover:ring-indigo-400/30;
   }
 
+  /* ---------------------------------------------------------------------- Tabele */
   .table-base {
-    @apply min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700;
+    @apply min-w-full text-sm;
+  }
+  .table-base thead {
+    @apply bg-gray-50/80 dark:bg-white/[0.03];
   }
   .table-base th {
-    @apply px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-300;
+    @apply px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400;
   }
   .table-base td {
-    @apply px-3 py-2 text-gray-800 dark:text-gray-200;
+    @apply px-3 py-2.5 text-gray-800 dark:text-gray-200;
   }
   .table-base tbody tr {
-    @apply border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50;
+    @apply border-t border-gray-100 transition-colors duration-150 hover:bg-indigo-50/60
+      dark:border-white/5 dark:hover:bg-indigo-400/[0.07];
+  }
+  /* Klikalne wiersze: pasek akcentu z lewej przy najechaniu i przyciemnienie przy kliknięciu. */
+  .table-base tbody tr.cursor-pointer td:first-child {
+    transition: box-shadow 0.2s ease;
+  }
+  .table-base tbody tr.cursor-pointer:hover td:first-child {
+    box-shadow: inset 3px 0 0 theme('colors.indigo.500');
+  }
+  .table-base tbody tr.cursor-pointer:active {
+    @apply bg-indigo-100/70 dark:bg-indigo-400/[0.12];
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ring-black/5
+      dark:ring-white/10;
+  }
+
+  /* ---------------------------------------------------------------------- Modale */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 px-4 backdrop-blur-sm animate-fade-in
+      dark:bg-black/60;
+  }
+  .modal-panel {
+    @apply rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-gray-900/5 animate-modal-in dark:bg-gray-900 dark:ring-white/10;
+  }
+}
+
+@layer utilities {
+  /* Siatka kropek w tle (patrz components/Backdrop.tsx). */
+  .bg-dots {
+    background-image: radial-gradient(rgb(99 102 241 / 0.16) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .dark .bg-dots {
+    background-image: radial-gradient(rgb(165 180 252 / 0.08) 1px, transparent 1px);
   }
 }

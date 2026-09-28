@@ -114,8 +114,8 @@ export function AppUsersPage() {
       <DataTable columns={columns} items={items} isLoading={isLoading} getRowKey={(u) => u.id} emptyLabel="Brak kont" />
 
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-          <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+        <div className="modal-overlay">
+          <div className="modal-panel w-full max-w-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">Nowe konto aplikacji</h2>
             <form onSubmit={createForm.handleSubmit(onCreate)} className="space-y-4">
               <TextField label="Imię" registration={createForm.register('imie')} error={createForm.formState.errors.imie} required />
@@ -146,8 +146,8 @@ export function AppUsersPage() {
       )}
 
       {resetTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-          <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+        <div className="modal-overlay">
+          <div className="modal-panel w-full max-w-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               Reset hasła — {resetTarget.login}
             </h2>

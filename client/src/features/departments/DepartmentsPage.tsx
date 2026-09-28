@@ -88,8 +88,8 @@ export function DepartmentsPage() {
       <DataTable columns={columns} items={items} isLoading={isLoading} getRowKey={(d) => d.id} emptyLabel="Brak działów" />
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 dark:bg-black/60">
-          <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-lg dark:bg-gray-800">
+        <div className="modal-overlay">
+          <div className="modal-panel w-full max-w-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
               {editing ? 'Edytuj dział' : 'Nowy dział'}
             </h2>
