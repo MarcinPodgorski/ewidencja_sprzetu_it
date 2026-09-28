@@ -25,6 +25,7 @@ import { TonerFormPage } from './features/toners/TonerFormPage';
 import { EmployeesListPage } from './features/employees/EmployeesListPage';
 import { EmployeeDetailPage } from './features/employees/EmployeeDetailPage';
 import { EmployeeFormPage } from './features/employees/EmployeeFormPage';
+import { ZwrotSprzetuPage } from './features/employees/ZwrotSprzetuPage';
 import { DepartmentsPage } from './features/departments/DepartmentsPage';
 import { AppUsersPage } from './features/appUsers/AppUsersPage';
 import { EquipmentListsPage } from './features/equipmentLists/EquipmentListsPage';
@@ -36,6 +37,12 @@ import { FakturaFormPage } from './features/faktury/FakturaFormPage';
 import { OnboardingPage } from './features/onboarding/OnboardingPage';
 import { OnboardingFormPage } from './features/onboarding/OnboardingFormPage';
 import { OnboardingSesjaPage } from './features/onboarding/OnboardingSesjaPage';
+import { OdczytyPage } from './features/odczyty/OdczytyPage';
+import { OdczytPage } from './features/odczyty/OdczytPage';
+import { EtykietyPage } from './features/etykiety/EtykietyPage';
+import { InwentaryzacjePage } from './features/inwentaryzacje/InwentaryzacjePage';
+import { InwentaryzacjaPage } from './features/inwentaryzacje/InwentaryzacjaPage';
+import { SkanPage } from './features/inwentaryzacje/SkanPage';
 
 export default function App() {
   return (
@@ -43,6 +50,11 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
+        {/* Skan naklejki QR telefonem — osobny, mobilny widok bez paska bocznego. */}
+        <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+          <Route path="/q/:numer" element={<SkanPage />} />
+        </Route>
+
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
@@ -103,6 +115,7 @@ export default function App() {
             <Route path="/employees/new" element={<EmployeeFormPage />} />
             <Route path="/employees/:id" element={<EmployeeDetailPage />} />
             <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
+            <Route path="/employees/:id/zwrot" element={<ZwrotSprzetuPage />} />
 
             {/* Faktury */}
             <Route path="/faktury" element={<FakturyListPage />} />
@@ -113,6 +126,15 @@ export default function App() {
             {/* Onboarding komputerów (generator skryptów PowerShell) */}
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/onboarding/sesje/:id" element={<OnboardingSesjaPage />} />
+
+            {/* Odczyt danych sprzętu skryptem PowerShell */}
+            <Route path="/odczyty" element={<OdczytyPage />} />
+            <Route path="/odczyty/:id" element={<OdczytPage />} />
+
+            {/* Naklejki QR i spis z natury */}
+            <Route path="/etykiety" element={<EtykietyPage />} />
+            <Route path="/inwentaryzacje" element={<InwentaryzacjePage />} />
+            <Route path="/inwentaryzacje/:id" element={<InwentaryzacjaPage />} />
 
             {/* Działy, konta aplikacji, protokół przekazania */}
             <Route path="/departments" element={<DepartmentsPage />} />

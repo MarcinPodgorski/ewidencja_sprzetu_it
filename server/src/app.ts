@@ -27,6 +27,10 @@ import { oprogramowanieRouter } from './modules/onboarding/oprogramowanie.routes
 import { profileOprogramowaniaRouter } from './modules/onboarding/profile.routes';
 import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { onboardingStartRouter } from './modules/onboarding/start.routes';
+import { odczytyRouter } from './modules/odczyty/odczyty.routes';
+import { odczytPublicznyRouter } from './modules/odczyty/odczyt.public.routes';
+import { etykietyRouter } from './modules/etykiety/etykiety.routes';
+import { inwentaryzacjeRouter } from './modules/inwentaryzacje/inwentaryzacje.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -63,8 +67,13 @@ export function createApp(): Express {
   apiRouter.use('/oprogramowanie', oprogramowanieRouter);
   apiRouter.use('/profile-oprogramowania', profileOprogramowaniaRouter);
   apiRouter.use('/onboarding', onboardingRouter);
-  // Publiczny (bez logowania) — jednolinijkowiec `irm …/start/<kod> | iex` na nowym laptopie.
+  apiRouter.use('/odczyty', odczytyRouter);
+  apiRouter.use('/etykiety', etykietyRouter);
+  apiRouter.use('/inwentaryzacje', inwentaryzacjeRouter);
+  // Publiczne (bez logowania) — jednolinijkowce na komputerach: `irm …/start/<kod> | iex`
+  // (onboarding nowego laptopa) i `irm …/odczyt/<kod> | iex` (odczyt danych sprzętu).
   apiRouter.use('/start', onboardingStartRouter);
+  apiRouter.use('/odczyt', odczytPublicznyRouter);
 
   // Każda ścieżka pod /api nieobsłużona powyżej kończy się jawnym 404 JSON —
   // rejestrowane jako ostatnie w apiRouter, więc nigdy nie "przecieka" do SPA fallbacku.

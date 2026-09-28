@@ -1,11 +1,18 @@
 import type {
   AppUserRole,
   ComputerType,
+  DaneOdczytu,
+  DopasowanieOdczytu,
   OnboardingTryb,
   OprogramowanieZrodlo,
   PhoneType,
+  PoleOdczytu,
   RamType,
+  StatusInwentaryzacji,
+  StatusOdczytu,
   SystemOperacyjny,
+  TypZEtykieta,
+  ZrodloOdczytu,
 } from 'shared';
 
 export interface Department {
@@ -250,3 +257,118 @@ export interface OnboardingSesja {
   employee: { id: number; imie: string; nazwisko: string; email: string | null };
   utworzylAppUser: { id: number; login: string } | null;
 }
+
+/** Kod jednolinijkowca `irm …/odczyt/<kod> | iex` (ogólny albo przypięty do komputera). */
+export interface OdczytKod {
+  id: number;
+  kod: string;
+  computerId: number | null;
+  computer: { id: number; numerEwidencyjny: string } | null;
+  wygasaAt: string;
+  wygasl: boolean;
+  createdAt: string;
+  liczbaOdczytow: number;
+}
+
+/** Odczyt danych sprzętu na liście (bez surowych danych). */
+export interface OdczytSprzetu {
+  id: number;
+  kodId: number | null;
+  zrodlo: ZrodloOdczytu;
+  status: StatusOdczytu;
+  computerId: number | null;
+  dopasowanie: DopasowanieOdczytu | null;
+  hostname: string | null;
+  numerSeryjny: string | null;
+  otrzymanoAt: string;
+  rozpatrzonoAt: string | null;
+  computer: { id: number; numerEwidencyjny: string; markaModel: string; wycofany: boolean } | null;
+  rozpatrzylAppUser: { id: number; login: string } | null;
+  /** Marka/model zaproponowana z odczytu — do rozpoznania pozycji na liście. */
+  markaModel: string | null;
+  /** Odrzucony automatycznie, bo przyszedł nowszy odczyt tego samego komputera. */
+  zastapiony: boolean;
+}
+
+export type PropozycjaOdczytu = Partial<Record<PoleOdczytu, string | number>>;
+
+export interface OdczytSzczegoly extends OdczytSprzetu {
+  dane: DaneOdczytu;
+  propozycja: PropozycjaOdczytu;
+  uwagi: Partial<Record<PoleOdczytu, string>>;
+  /** Pełny rekord dopasowanego komputera — do porównania „w ewidencji / z odczytu”. */
+  komputer: Computer | null;
+}
+
+/** Pozycja protokołu zwrotu (migawka z chwili zwrotu). */
+export interface PozycjaZwrotu {
+  typ: string;
+  identyfikator: string;
+  numerSeryjny: string | null;
+  markaModel: string | null;
+  uwagi: string | null;
+}
+
+export interface ZwrotSprzetu {
+  id: number;
+  employeeId: number;
+  odejscie: boolean;
+  pozycje: PozycjaZwrotu[];
+  pozostale: PozycjaZwrotu[];
+  notatka: string | null;
+  createdAt: string;
+  utworzylAppUser: { id: number; login: string } | null;
+}
+
+/** Sprzęt z numerem ewidencyjnym (naklejki QR, spis z natury) — patrz sprzetZEtykieta.ts na serwerze. */
+export interface SprzetZEtykieta {
+  sprzetTyp: TypZEtykieta;
+  sprzetId: number;
+  identyfikator: string;
+  opis: string | null;
+  numerSeryjny: string | null;
+  /** Imię i nazwisko użytkownika albo lokalizacja drukarki. */
+  uzytkownik: string | null;
+  dzialId: number | null;
+  dzial: string | null;
+  wycofany: boolean;
+}
+
+export interface Inwentaryzacja {
+  id: number;
+  nazwa: string;
+  dzialId: number | null;
+  dzial: Department | null;
+  status: StatusInwentaryzacji;
+  createdAt: string;
+  zamknietaAt: string | null;
+  utworzylAppUser?: { id: number; login: string } | null;
+  liczbaPozycji: number;
+  liczbaPotwierdzonych: number;
+  liczbaSpozaListy: number;
+}
+
+export interface InwentaryzacjaPozycja {
+  id: number;
+  inwentaryzacjaId: number;
+  sprzetTyp: TypZEtykieta;
+  sprzetId: number;
+  identyfikator: string;
+  opis: string | null;
+  uzytkownik: string | null;
+  dzial: string | null;
+  spozaListy: boolean;
+  potwierdzonoAt: string | null;
+  potwierdzilAppUser: { id: number; login: string } | null;
+  uwagi: string | null;
+}
+
+export interface InwentaryzacjaSzczegoly extends Omit<Inwentaryzacja, 'liczbaPozycji' | 'liczbaPotwierdzonych' | 'liczbaSpozaListy'> {
+  pozycje: InwentaryzacjaPozycja[];
+}
+
+/** Wynik skanu naklejki: sprzęt o tym numerze + jego stan w otwartych inwentaryzacjach. */
+export interface WynikSkanu extends SprzetZEtykieta {
+  inwentaryzacje: { id: number; nazwa: string; dzial: string | null; pozycja: InwentaryzacjaPozycja | null }[];
+}
+

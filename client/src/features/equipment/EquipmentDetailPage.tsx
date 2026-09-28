@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { TYPY_Z_ETYKIETA } from 'shared';
 import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import { HistoryTable } from '../../components/HistoryTable';
@@ -63,6 +64,14 @@ export function EquipmentDetailPage<
         backTo={config.routeBase}
         actions={
           <>
+            {(TYPY_Z_ETYKIETA as readonly string[]).includes(config.sprzetTyp) && (
+              <Link
+                to={`/etykiety?typ=${config.sprzetTyp}&szukaj=${encodeURIComponent(config.identifier(item))}`}
+                className="btn-secondary"
+              >
+                Etykieta QR
+              </Link>
+            )}
             <Link to={`${config.routeBase}/${item.id}/edit`} className="btn-secondary">
               Edytuj
             </Link>

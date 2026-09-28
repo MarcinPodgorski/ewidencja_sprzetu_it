@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { employeeCreateSchema, employeeUpdateSchema, idParamSchema, miscItemCreateSchema, EQUIPMENT_TYPES } from 'shared';
+import { employeeCreateSchema, employeeUpdateSchema, idParamSchema, miscItemCreateSchema } from 'shared';
 import type { EquipmentType } from 'shared';
 import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
-import { getEquipmentDelegate, getEquipmentSummary } from '../equipment/equipmentLookup';
+import { getEquipmentSummary } from '../equipment/equipmentLookup';
+import { listaZwrotow, protokolZwrotu, sprzetPracownika, zapiszZwrot } from './zwroty';
 
 export const employeesRouter = Router();
 
@@ -82,25 +83,18 @@ employeesRouter.delete(
   }),
 );
 
-/** Typy sprzętu, które mogą mieć bieżącego użytkownika (wszystkie oprócz drukarki). */
-const ASSIGNABLE_TYPES = EQUIPMENT_TYPES.filter((t): t is EquipmentType => t !== 'DRUKARKA');
-
 employeesRouter.get(
   '/:id/equipment',
   asyncHandler(async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-
-    const perType = await Promise.all(
-      ASSIGNABLE_TYPES.map(async (sprzetTyp) => {
-        const delegate = getEquipmentDelegate(sprzetTyp);
-        const rows = await delegate.findMany({ where: { aktualnyUzytkownikId: id, wycofany: false } });
-        return rows.map((row: any) => ({ sprzetTyp, ...row }));
-      }),
-    );
-
-    res.json({ items: perType.flat() });
+    res.json({ items: await sprzetPracownika(id) });
   }),
 );
+
+/** Zwrot sprzętu (także przy odejściu pracownika) i protokoły zwrotu — patrz zwroty.ts. */
+employeesRouter.post('/:id/zwrot', asyncHandler(zapiszZwrot));
+employeesRouter.get('/:id/zwroty', asyncHandler(listaZwrotow));
+employeesRouter.get('/:id/zwroty/:zwrotId/protokol', asyncHandler(protokolZwrotu));
 
 employeesRouter.get(
   '/:id/history',

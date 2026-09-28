@@ -56,6 +56,9 @@ export function PrinterDetailPage() {
         backTo="/printers"
         actions={
           <>
+            <Link to={`/etykiety?typ=DRUKARKA&szukaj=${encodeURIComponent(printer.numerEwidencyjny)}`} className="btn-secondary">
+              Etykieta QR
+            </Link>
             <Link to={`/printers/${printer.id}/edit`} className="btn-secondary">
               Edytuj
             </Link>

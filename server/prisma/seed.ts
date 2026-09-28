@@ -12,6 +12,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('Czyszczenie istniejących danych...');
+  await prisma.inwentaryzacja.deleteMany(); // pozycje kasowane kaskadowo
+  await prisma.odczytSprzetu.deleteMany();
+  await prisma.odczytKod.deleteMany();
   await prisma.onboardingSesja.deleteMany();
   await prisma.profilOprogramowania.deleteMany(); // pozycje profili kasowane kaskadowo
   await prisma.oprogramowanie.deleteMany();
@@ -20,6 +23,7 @@ async function main() {
   await prisma.equipmentListItem.deleteMany();
   await prisma.equipmentList.deleteMany();
   await prisma.assignmentHistory.deleteMany();
+  await prisma.zwrotSprzetu.deleteMany();
   await prisma.miscItem.deleteMany();
   await prisma.faktura.deleteMany(); // faktura_pozycje kasowane kaskadowo
   await prisma.printerToner.deleteMany();

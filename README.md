@@ -4,7 +4,19 @@ Wewnętrzny system do ewidencji sprzętu komputerowego firmy: komputery, monitor
 myszy, klawiatury, telefony, karty SIM, drukarki, tonery, pracownicy oraz konta
 aplikacji. Umożliwia przypisywanie sprzętu do pracowników (z pełną historią
 przypisań), tworzenie spisów sprzętu per dział z granularnymi uprawnieniami oraz
-generowanie protokołów przekazania sprzętu w PDF.
+generowanie protokołów przekazania i zwrotu sprzętu w PDF.
+
+Narzędzia dla działu IT:
+
+- **Onboarding** — skrypt PowerShell konfigurujący nowy laptop (Windows 11 Home/Pro,
+  programy z winget i własnych instalatorów, konto pracownika, Microsoft 365).
+- **Odczyt sprzętu** — jednolinijkowiec odczytujący z komputera model, numer seryjny,
+  CPU, RAM, dyski, wersję Windowsa i adresy MAC; dane czekają na zatwierdzenie
+  w aplikacji (porównanie z ewidencją albo nowy komputer).
+- **Odejście pracownika** — zwrot sprzętu z protokołem PDF, dezaktywacja i lista
+  kontrolna (M365, reset sprzętu, karta SIM).
+- **Etykiety QR i inwentaryzacja** — naklejki z kodem prowadzącym do karty sprzętu
+  i spis z natury: skan telefonem potwierdza obecność, raport braków w PDF.
 
 ## Stack
 
@@ -21,6 +33,10 @@ generowanie protokołów przekazania sprzętu w PDF.
 - **user** — brak dostępu domyślnie. Widzi wyłącznie spisy sprzętu, do których
   administrator jawnie nadał uprawnienie: `VIEW` (podgląd pozycji) albo `EDIT`
   (dodatkowo dodawanie/usuwanie pozycji, przez wyszukiwarkę `/equipment/search`).
+- **bez logowania** — wyłącznie jednolinijkowce PowerShella uruchamiane na komputerach:
+  `/sprzet/api/start/<kod>` (onboarding) i `/sprzet/api/odczyt/<kod>` (odczyt sprzętu).
+  Chroni je krótkotrwały, losowy kod generowany w aplikacji; odczyt sprzętu i tak niczego
+  nie zapisuje w ewidencji bez zatwierdzenia przez admina.
 
 ## Struktura repozytorium
 
@@ -60,6 +76,21 @@ Dane demo z seeda:
 | `akowalska` | `user123`  | user  | uprawnienie VIEW do spisu „Sprzęt działu IT — 2026”        |
 
 **Zmień oba hasła (albo usuń konto testowe) przed wdrożeniem na produkcję.**
+
+### Dodawanie zależności npm
+
+npm 11 ma błąd: `npm install <pakiet>` przy istniejącym `package-lock.json` usuwa z niego
+wpisy platformowe esbuilda (`@esbuild/*`, wymagane przez `tsx`), przez co instalacja
+na innym systemie — np. `npm ci` na serwerze Ubuntu — musiałaby dociągać binarkę awaryjnie.
+Po zmianie zależności wygeneruj lockfile od zera i sprawdź, że wpisy wróciły:
+
+```bash
+rm -rf node_modules */node_modules package-lock.json
+npm install
+grep -c '"node_modules/@esbuild/' package-lock.json   # oczekiwane: 26 (0 = lockfile uszkodzony)
+```
+
+Sam `npm ci` (instalacja z lockfile, także przy wdrożeniu) działa poprawnie.
 
 ## Build produkcyjny
 

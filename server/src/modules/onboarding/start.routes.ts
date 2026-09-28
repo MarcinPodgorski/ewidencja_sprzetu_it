@@ -1,12 +1,14 @@
 import path from 'path';
 import { Router } from 'express';
-import type { OnboardingTryb } from 'shared';
+import { daneOdczytuSchema, type OnboardingTryb } from 'shared';
 import { INSTALATORY_DIR } from '../../config/uploads';
 import { prisma } from '../../db/prisma';
-import { asyncHandler } from '../../middleware/errorHandler';
+import { asyncHandler, AppError } from '../../middleware/errorHandler';
+import { KOD_REGEX } from '../../utils/kodDostepu';
+import { zapiszOdczyt } from '../odczyty/odczyty.service';
 import { adresApi } from './adresApi';
-import { KOD_REGEX } from './onboarding.routes';
-import { generateOnboardingScript, konfiguracjaOnboardinguSchema, skryptBledu } from './scriptGenerator';
+import { skryptBledu } from '../../utils/powershell';
+import { generateOnboardingScript, konfiguracjaOnboardinguSchema } from './scriptGenerator';
 
 /**
  * PUBLICZNE endpointy (bez logowania) dla nowego laptopa:
@@ -78,5 +80,24 @@ onboardingStartRouter.get(
     }
     res.setHeader('Cache-Control', 'no-store');
     res.download(path.join(INSTALATORY_DIR, program.plik), program.plikNazwa);
+  }),
+);
+
+/**
+ * Odczyt danych sprzętu wysyłany na końcu skryptu onboardingu. Komputer jest znany
+ * z sesji, więc bez dopasowywania — odczyt czeka na przejrzenie na karcie komputera.
+ */
+onboardingStartRouter.post(
+  '/:kod/odczyt',
+  asyncHandler(async (req, res) => {
+    const sesja = await znajdzWaznaSesje(req.params.kod);
+    if (!sesja) throw new AppError(410, 'Kod skryptu onboardingu jest nieprawidłowy albo wygasł');
+    const dane = daneOdczytuSchema.parse(req.body);
+    const { komunikat } = await zapiszOdczyt({
+      dane,
+      zrodlo: 'ONBOARDING',
+      wskazany: { computerId: sesja.computerId, dopasowanie: 'ONBOARDING' },
+    });
+    res.status(201).json({ komunikat });
   }),
 );

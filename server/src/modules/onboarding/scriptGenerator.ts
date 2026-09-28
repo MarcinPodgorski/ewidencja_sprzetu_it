@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { ONBOARDING_TRYB_LABELS, type OnboardingTryb } from 'shared';
+import { podstaw, psQuote } from '../../utils/powershell';
+import { funkcjeOdczytu, ZNACZNIK_FUNKCJI } from '../odczyty/skryptOdczytu';
 
 /** Szablon trzymany jako zwykły plik .ps1 (jak fonty PDF w server/assets) — dzięki temu
  *  kod PowerShella nie wymaga escapowania backticków i `$` w stringach JS. */
@@ -36,18 +38,6 @@ export const konfiguracjaOnboardinguSchema = z.object({
   m365Apps: z.boolean(),
 });
 export type KonfiguracjaOnboardingu = z.infer<typeof konfiguracjaOnboardinguSchema>;
-
-/**
- * Literał PowerShella w pojedynczych cudzysłowach — jedyne miejsce, przez które dane
- * z aplikacji trafiają do skryptu. W takim literale nic nie jest interpolowane, a jedyny
- * znak specjalny to apostrof (ucieczka przez podwojenie). Uwaga: PowerShell uznaje za
- * apostrof także typograficzne ‘ ’ ‚ ‛ — je też trzeba podwoić, inaczej np. „O’Connor”
- * albo tekst wklejony z Worda zakończyłby literał i reszta stałaby się kodem.
- */
-export function psQuote(value: string): string {
-  const normalized = value.replace(/\0/g, '').replace(/\r?\n/g, '\r\n');
-  return `'${normalized.replace(/['‘’‚‛]/g, (q) => q + q)}'`;
-}
 
 function psValue(value: string | null): string {
   return value === null ? '$null' : psQuote(value);
@@ -117,16 +107,12 @@ function blokKonfiguracji(tryb: OnboardingTryb, k: KonfiguracjaOnboardingu, opcj
 /** Kompletny skrypt (CRLF, bez BOM — BOM dokłada tylko endpoint pobierania pliku). */
 export function generateOnboardingScript(tryb: OnboardingTryb, k: KonfiguracjaOnboardingu, opcje: OpcjeSkryptu): string {
   const template = fs.readFileSync(TEMPLATE_PATH, 'utf8');
-  if (!template.includes(PLACEHOLDER)) {
-    throw new Error(`Szablon ${TEMPLATE_PATH} nie zawiera znacznika ${PLACEHOLDER}`);
-  }
-  // Funkcja zamiast stringu jako zamiennik: w stringu `$'`, `$&` itp. mają w
-  // String.replace specjalne znaczenie — a w skrypcie PowerShella `$` jest wszędzie.
-  const script = template.replace(PLACEHOLDER, () => blokKonfiguracji(tryb, k, opcje));
+  // Funkcje odczytu sprzętu (krok „Dane sprzętu do ewidencji”) są wspólne ze skryptem odczytu.
+  const script = podstaw(
+    podstaw(template, PLACEHOLDER, blokKonfiguracji(tryb, k, opcje), TEMPLATE_PATH),
+    ZNACZNIK_FUNKCJI,
+    funkcjeOdczytu(),
+    TEMPLATE_PATH,
+  );
   return script.replace(/\r?\n/g, '\r\n');
-}
-
-/** Minimalny „skrypt” zwracany dla nieważnego/wygasłego kodu — `irm … | iex` pokaże komunikat. */
-export function skryptBledu(komunikat: string): string {
-  return `Write-Host ${psQuote(komunikat)} -ForegroundColor Red\r\n`;
 }

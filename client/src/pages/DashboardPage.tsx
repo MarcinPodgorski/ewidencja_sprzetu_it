@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   CardSim,
+  ClipboardCheck,
+  Cpu,
   ClipboardList,
   KeyRound,
   Keyboard,
@@ -16,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useDashboardStats } from '../features/dashboard/dashboard.hooks';
+import { odmiana } from '../lib/odmiana';
+import { PasekPostepu } from '../features/inwentaryzacje/utils';
 
 interface StatTileProps {
   label: string;
@@ -61,7 +65,11 @@ function AdminDashboard() {
   }
 
   const { counts, alerts } = data;
-  const hasAlerts = alerts.lowToners.length > 0 || alerts.expiringSimCards.length > 0;
+  const hasAlerts =
+    alerts.lowToners.length > 0 ||
+    alerts.expiringSimCards.length > 0 ||
+    alerts.odczytyDoPrzejrzenia > 0 ||
+    alerts.inwentaryzacjeWToku.length > 0;
 
   return (
     <div className="space-y-8">
@@ -91,6 +99,46 @@ function AdminDashboard() {
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Wymaga uwagi</h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {alerts.inwentaryzacjeWToku.length > 0 && (
+              <div className="card">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="badge bg-indigo-50 text-indigo-700 dark:bg-indigo-400/10 dark:text-indigo-300">
+                    <ClipboardCheck className="h-3 w-3" />
+                    w toku</span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Inwentaryzacja</h3>
+                </div>
+                <ul className="space-y-3">
+                  {alerts.inwentaryzacjeWToku.map((inw) => (
+                    <li key={inw.id}>
+                      <Link to={`/inwentaryzacje/${inw.id}`} className="mb-1 block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                        {inw.nazwa}
+                      </Link>
+                      <PasekPostepu potwierdzone={inw.liczbaPotwierdzonych} wszystkie={inw.liczbaPozycji} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {alerts.odczytyDoPrzejrzenia > 0 && (
+              <div className="card">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="badge bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
+                    <Cpu className="h-3 w-3" />
+                    odczyt sprzętu</span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Odczyty do przejrzenia</h3>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Z komputerów {odmiana(alerts.odczytyDoPrzejrzenia, ['przyszedł', 'przyszły', 'przyszło'])} {alerts.odczytyDoPrzejrzenia}{' '}
+                  {odmiana(alerts.odczytyDoPrzejrzenia, ['odczyt', 'odczyty', 'odczytów'])} — sprawdź zmiany przed zapisaniem w
+                  ewidencji.{' '}
+                  <Link to="/odczyty" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    Przejrzyj
+                  </Link>
+                </p>
+              </div>
+            )}
+
             {alerts.lowToners.length > 0 && (
               <div className="card">
                 <div className="mb-2 flex items-center gap-2">

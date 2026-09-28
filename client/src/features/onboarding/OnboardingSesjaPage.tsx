@@ -1,32 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ONBOARDING_TRYB_LABELS } from 'shared';
+import { KomendaDoSkopiowania } from '../../components/KomendaDoSkopiowania';
 import { PageHeader } from '../../components/PageHeader';
 import { apiUrl } from '../../lib/api';
 import { useOnboardingSesja } from './onboarding.hooks';
 import { StatusSesji } from './OnboardingSesjeTable';
 import { formatujDate, formatujRozmiar, komendaStartowa } from './utils';
-
-/** Kopiowanie działa też pod http://<ip> — navigator.clipboard wymaga HTTPS/localhost. */
-async function kopiujDoSchowka(tekst: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(tekst);
-      return true;
-    }
-    const pole = document.createElement('textarea');
-    pole.value = tekst;
-    pole.style.position = 'fixed';
-    pole.style.opacity = '0';
-    document.body.appendChild(pole);
-    pole.select();
-    const ok = document.execCommand('copy');
-    pole.remove();
-    return ok;
-  } catch {
-    return false;
-  }
-}
 
 function Krok({ numer, children }: { numer: number; children: ReactNode }) {
   return (
@@ -51,7 +31,6 @@ function Pozycja({ etykieta, children }: { etykieta: string; children: ReactNode
 export function OnboardingSesjaPage() {
   const { id } = useParams();
   const { data: sesja, isLoading, isError } = useOnboardingSesja(Number(id));
-  const [skopiowano, setSkopiowano] = useState(false);
 
   if (isLoading) return <div className="text-sm text-gray-500 dark:text-gray-400">Ładowanie…</div>;
   if (isError || !sesja) {
@@ -63,13 +42,6 @@ export function OnboardingSesjaPage() {
   const login = k.loginLokalny ?? '';
   const nazwaPliku = `onboarding-${k.nazwaKomputera}.ps1`;
   const instalatory = k.programy.flatMap((p) => (p.typ === 'PLIK' ? [p] : []));
-
-  async function kopiuj() {
-    if (await kopiujDoSchowka(komenda)) {
-      setSkopiowano(true);
-      setTimeout(() => setSkopiowano(false), 2000);
-    }
-  }
 
   const kod = (tekst: string) => <code className="rounded bg-gray-100 px-1 py-0.5 text-xs dark:bg-gray-700">{tekst}</code>;
 
@@ -98,12 +70,7 @@ export function OnboardingSesjaPage() {
             <span>ważne do {formatujDate(sesja.wygasaAt)}</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3 rounded-md bg-gray-900 px-4 py-3 dark:bg-black">
-          <code className="flex-1 break-all font-mono text-base text-green-300">{komenda}</code>
-          <button type="button" className="btn-secondary shrink-0" onClick={kopiuj}>
-            {skopiowano ? 'Skopiowano' : 'Kopiuj'}
-          </button>
-        </div>
+        <KomendaDoSkopiowania komenda={komenda} />
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
           Kod skryptu: <strong className="font-mono text-sm text-gray-800 dark:text-gray-200">{sesja.token}</strong> — laptop
           musi być w tej samej sieci co serwer aplikacji. Bez sieci:{' '}
@@ -208,6 +175,7 @@ export function OnboardingSesjaPage() {
             ) : (
               <Pozycja etykieta="OneDrive">automatyczne logowanie kontem z Windowsa</Pozycja>
             )}
+            <Pozycja etykieta="Dane sprzętu">wysyła odczyt do ewidencji — do przejrzenia na karcie komputera</Pozycja>
             <Pozycja etykieta="Nazwa komputera">{k.nazwaKomputera} (po restarcie)</Pozycja>
             <Pozycja etykieta="Wygenerował">
               {sesja.utworzylAppUser?.login ?? '—'}, {formatujDate(sesja.createdAt)}

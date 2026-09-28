@@ -2,23 +2,25 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EQUIPMENT_API_SEGMENT, EQUIPMENT_TYPE_LABELS, type EquipmentType } from 'shared';
 import { PageHeader } from '../../components/PageHeader';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { apiUrl } from '../../lib/api';
 import { employeesApi } from '../entities';
 import { AssignEquipmentModal } from './AssignEquipmentModal';
 import { useEmployeeEquipment, useEmployeeHistory } from './employees.hooks';
+import { useMiscItems } from './miscItems.hooks';
 import { MiscItemsSection } from './MiscItemsSection';
+import { useZwroty } from './zwroty.hooks';
 
 export function EmployeeDetailPage() {
   const { id } = useParams();
   const numId = Number(id);
   const navigate = useNavigate();
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   const { data: employee, isLoading, isError } = employeesApi.useDetail(numId);
   const { data: equipment } = useEmployeeEquipment(numId);
+  const { data: miscItems } = useMiscItems(numId);
   const { data: history } = useEmployeeHistory(numId);
-  const deactivateMutation = employeesApi.useArchive();
+  const { data: zwroty } = useZwroty(numId);
 
   if (isLoading) {
     return <div className="text-sm text-gray-500 dark:text-gray-400">Ładowanie…</div>;
@@ -51,9 +53,10 @@ export function EmployeeDetailPage() {
                 <button type="button" className="btn-primary" onClick={() => setAssignModalOpen(true)}>
                   Przypisz sprzęt
                 </button>
-                <button type="button" className="btn-danger" onClick={() => setConfirmDeactivate(true)}>
-                  Dezaktywuj
-                </button>
+                {/* Dezaktywacja przez odejście: zwrot sprzętu + protokół + lista kontrolna (albo sama dezaktywacja). */}
+                <Link to={`/employees/${employee.id}/zwrot?odejscie=1`} className="btn-danger">
+                  Odejście pracownika
+                </Link>
               </>
             )}
           </>
@@ -67,7 +70,14 @@ export function EmployeeDetailPage() {
       )}
 
       <div className="mb-6">
-        <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Przypisany sprzęt</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Przypisany sprzęt</h2>
+          {((equipment?.length ?? 0) > 0 || (miscItems?.length ?? 0) > 0) && (
+            <Link to={`/employees/${employee.id}/zwrot`} className="btn-secondary text-xs">
+              Zwrot sprzętu
+            </Link>
+          )}
+        </div>
         {equipment && equipment.length > 0 ? (
           <div className="card overflow-x-auto p-0">
             <table className="table-base">
@@ -104,6 +114,57 @@ export function EmployeeDetailPage() {
       </div>
 
       <MiscItemsSection employeeId={employee.id} />
+
+      {zwroty && zwroty.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Protokoły zwrotu</h2>
+          <div className="card overflow-x-auto p-0">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Rodzaj</th>
+                  <th>Zwrócone pozycje</th>
+                  <th>Zarejestrował</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {zwroty.map((z) => (
+                  <tr key={z.id}>
+                    <td className="whitespace-nowrap">{new Date(z.createdAt).toLocaleString('pl-PL')}</td>
+                    <td>
+                      {z.odejscie ? (
+                        <span className="badge bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300">odejście</span>
+                      ) : (
+                        'zwrot'
+                      )}
+                    </td>
+                    <td className="max-w-md truncate" title={z.pozycje.map((p) => p.identyfikator).join(', ')}>
+                      {z.pozycje.map((p) => p.identyfikator).join(', ')}
+                      {z.pozostale.length > 0 && (
+                        <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                          ({z.odejscie ? 'niezwrócone' : 'zostało u pracownika'}: {z.pozostale.length})
+                        </span>
+                      )}
+                    </td>
+                    <td>{z.utworzylAppUser?.login ?? '—'}</td>
+                    <td className="text-right">
+                      <a
+                        href={apiUrl(`/employees/${employee.id}/zwroty/${z.id}/protokol`)}
+                        download
+                        className="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                      >
+                        PDF
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Historia przypisań</h2>
@@ -150,17 +211,6 @@ export function EmployeeDetailPage() {
           </div>
         )}
       </div>
-
-      <ConfirmDialog
-        open={confirmDeactivate}
-        title="Dezaktywować tego pracownika?"
-        description="Pracownik zniknie z list wyboru przy przypisywaniu nowego sprzętu. Historia i bieżące przypisania pozostaną zachowane."
-        confirmLabel="Dezaktywuj"
-        danger
-        busy={deactivateMutation.isPending}
-        onConfirm={() => deactivateMutation.mutate(employee.id, { onSuccess: () => setConfirmDeactivate(false) })}
-        onCancel={() => setConfirmDeactivate(false)}
-      />
 
       {assignModalOpen && (
         <AssignEquipmentModal employeeId={employee.id} onClose={() => setAssignModalOpen(false)} />

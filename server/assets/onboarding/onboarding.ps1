@@ -205,6 +205,8 @@
         }
     }
 
+#@FUNKCJE_ODCZYTU@#
+
     try {
         # --------------------------------------------------------------------
         # 1. Komunikat przy logowaniu (okno przed zalogowaniem — działa też w Home)
@@ -351,7 +353,15 @@ Start-Process 'ms-settings:workplace'
         }
 
         # --------------------------------------------------------------------
-        # 5. Nazwa komputera (na końcu — wymaga restartu)
+        # 5. Dane sprzętu do ewidencji (model, numer seryjny, pamięć, MAC…) —
+        #    trafiają do aplikacji jako odczyt do przejrzenia, nic nie nadpisuje się samo
+        # --------------------------------------------------------------------
+        Invoke-Krok 'Dane sprzętu do ewidencji' {
+            Send-DaneSprzetu -Adres ('{0}/start/{1}/odczyt' -f $AdresSerwera, $KodSkryptu) -Dane (Get-DaneSprzetu)
+        }
+
+        # --------------------------------------------------------------------
+        # 6. Nazwa komputera (na końcu — wymaga restartu)
         # --------------------------------------------------------------------
         Invoke-Krok ('Nazwa komputera: {0}' -f $NazwaKomputera) {
             if ($env:COMPUTERNAME -eq $NazwaKomputera) { return 'OK — nazwa już ustawiona' }

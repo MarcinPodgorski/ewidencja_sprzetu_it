@@ -26,6 +26,21 @@ export {
   SYSTEM_OPERACYJNY_LABELS,
   rodzinaSystemu,
   edycjaWindowsa,
+  STATUSY_ODCZYTU,
+  STATUS_ODCZYTU_LABELS,
+  ZRODLA_ODCZYTU,
+  ZRODLO_ODCZYTU_LABELS,
+  DOPASOWANIA_ODCZYTU,
+  DOPASOWANIE_ODCZYTU_LABELS,
+  POLA_ODCZYTU,
+  POLE_ODCZYTU_LABELS,
+  TYPY_PAMIECI_SMBIOS,
+  rozmiarDysku,
+  TYPY_Z_ETYKIETA,
+  SZABLONY_ETYKIET,
+  SZABLON_ETYKIET_INFO,
+  STATUSY_INWENTARYZACJI,
+  STATUS_INWENTARYZACJI_LABELS,
 } from './enums';
 export type {
   ComputerType,
@@ -38,6 +53,14 @@ export type {
   OprogramowanieZrodlo,
   SystemOperacyjny,
   RodzinaSystemu,
+  StatusOdczytu,
+  ZrodloOdczytu,
+  DopasowanieOdczytu,
+  PoleOdczytu,
+  TypZEtykieta,
+  SzablonEtykiet,
+  WymiaryEtykiet,
+  StatusInwentaryzacji,
 } from './enums';
 
 export {
@@ -137,3 +160,29 @@ export type {
   UstawieniaOnboardinguInput,
   OnboardingSesjaCreateInput,
 } from './schemas/onboarding';
+
+export {
+  daneOdczytuSchema,
+  odczytKodCreateSchema,
+  odczytDopasujSchema,
+  odczytZastosujSchema,
+  odczytUtworzKomputerSchema,
+} from './schemas/odczyt';
+export type {
+  DaneOdczytu,
+  OdczytKodCreateInput,
+  OdczytDopasujInput,
+  OdczytZastosujInput,
+  OdczytUtworzKomputerInput,
+} from './schemas/odczyt';
+
+export { zwrotSprzetuSchema } from './schemas/zwrot';
+export type { ZwrotSprzetuInput } from './schemas/zwrot';
+
+export {
+  sprzetZEtykietaSchema,
+  etykietyPdfSchema,
+  inwentaryzacjaCreateSchema,
+  inwentaryzacjaPotwierdzSchema,
+} from './schemas/inwentaryzacja';
+export type { EtykietyPdfInput, InwentaryzacjaCreateInput, InwentaryzacjaPotwierdzInput } from './schemas/inwentaryzacja';

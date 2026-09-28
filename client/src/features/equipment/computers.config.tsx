@@ -14,7 +14,7 @@ import { StatusBadge, UserBadge } from '../../components/StatusBadge';
 import { computersApi } from '../entities';
 import type { Computer } from '../../types/entities';
 import type { EquipmentTypeConfig } from './types';
-import { ComputerOnboardingPanel } from '../onboarding/ComputerOnboardingPanel';
+import { ComputerDetailExtras } from './ComputerDetailExtras';
 
 const typeOptions = COMPUTER_TYPES.map((t) => ({ value: t, label: COMPUTER_TYPE_LABELS[t] }));
 const ramOptions = RAM_TYPES.map((t) => ({ value: t, label: t === 'INNY' ? 'Inny' : t }));
@@ -85,7 +85,7 @@ export const computerConfig: EquipmentTypeConfig<Computer> = {
     { name: 'kosztBruttoGrosze', label: 'Koszt brutto (zł)', type: 'number', displayFormat: 'money' },
     { name: 'notatki', label: 'Notatki', type: 'textarea' },
   ],
-  DetailExtra: ComputerOnboardingPanel,
+  DetailExtra: ComputerDetailExtras,
   extraFilters: [
     { field: 'typ', label: 'Typ', options: typeOptions },
     { field: 'ramRodzaj', label: 'RAM', options: ramOptions },

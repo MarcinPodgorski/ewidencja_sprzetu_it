@@ -1,9 +1,9 @@
-import crypto from 'crypto';
 import { Router } from 'express';
 import { idParamSchema, onboardingSesjaCreateSchema, ustawieniaOnboardinguSchema, type OnboardingTryb } from 'shared';
 import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
+import { wygenerujKod } from '../../utils/kodDostepu';
 import * as assignmentHistoryService from '../assignmentHistory/assignmentHistory.service';
 import { adresApi } from './adresApi';
 import {
@@ -21,17 +21,6 @@ onboardingRouter.use(requireAuth, requireRole('ADMIN'));
  *  (hasło konta lokalnego wpisuje się przy uruchomieniu), więc kilka dni wystarczy
  *  na przygotowanie laptopa, a link i tak sam wygaśnie. */
 const WAZNOSC_KODU_MS = 72 * 60 * 60 * 1000;
-
-/** Krótki kod do przepisania ręcznie na nowym laptopie — bez znaków mylących się
- *  przy przepisywaniu (0/o, 1/l/i). 31^8 ≈ 8,5·10^11 kombinacji przy ważności 72 h. */
-const ALFABET_KODU = 'abcdefghjkmnpqrstuvwxyz23456789';
-export const KOD_REGEX = /^[a-hjkmnp-z2-9]{8}$/;
-
-function wygenerujKod(): string {
-  let kod = '';
-  for (let i = 0; i < 8; i++) kod += ALFABET_KODU[crypto.randomInt(ALFABET_KODU.length)];
-  return kod;
-}
 
 const DOMYSLNE_USTAWIENIA = {
   komunikatTytul: 'Komputer służbowy {komputer}',

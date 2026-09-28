@@ -28,6 +28,8 @@ dashboardRouter.get(
       equipmentLists,
       lowToners,
       expiringSimCards,
+      odczytyDoPrzejrzenia,
+      otwarteInwentaryzacje,
     ] = await Promise.all([
       prisma.computer.count({ where: activeFilter }),
       prisma.monitor.count({ where: activeFilter }),
@@ -50,11 +52,23 @@ dashboardRouter.get(
         orderBy: { dataKoncaUmowy: 'asc' },
         select: { id: true, numerTelefonu: true, iccid: true, dataKoncaUmowy: true },
       }),
+      prisma.odczytSprzetu.count({ where: { status: 'NOWY' } }),
+      prisma.inwentaryzacja.findMany({
+        where: { status: 'OTWARTA' },
+        select: { id: true, nazwa: true, pozycje: { select: { spozaListy: true, potwierdzonoAt: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
+
+    // Postęp liczony po liście startowej — znalezione spoza listy go nie zawyżają.
+    const inwentaryzacjeWToku = otwarteInwentaryzacje.map(({ pozycje, ...inw }) => {
+      const zListy = pozycje.filter((p) => !p.spozaListy);
+      return { ...inw, liczbaPozycji: zListy.length, liczbaPotwierdzonych: zListy.filter((p) => p.potwierdzonoAt).length };
+    });
 
     res.json({
       counts: { computers, monitors, mice, keyboards, phones, simCards, printers, employees, appUsers, equipmentLists },
-      alerts: { lowToners, expiringSimCards },
+      alerts: { lowToners, expiringSimCards, odczytyDoPrzejrzenia, inwentaryzacjeWToku },
     });
   }),
 );

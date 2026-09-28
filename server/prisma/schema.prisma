@@ -26,6 +26,7 @@ model Department {
   employees             Employee[]
   equipmentLists        EquipmentList[]
   profileOprogramowania ProfilOprogramowania[]
+  inwentaryzacje        Inwentaryzacja[]
 
   @@map("departments")
 }
@@ -55,6 +56,7 @@ model Employee {
 
   assignmentHistory AssignmentHistory[]
   onboardingSesje   OnboardingSesja[]
+  zwroty            ZwrotSprzetu[]
 
   @@index([dzialId])
   @@map("employees")
@@ -95,6 +97,11 @@ model AppUser {
   issuedPermissions  EquipmentListPermission[] @relation("PermissionGrantedBy")
   assignmentActions  AssignmentHistory[]       @relation("AssignmentActor")
   onboardingSesje    OnboardingSesja[]
+  odczytKody         OdczytKod[]
+  rozpatrzoneOdczyty OdczytSprzetu[]
+  zwroty             ZwrotSprzetu[]
+  inwentaryzacje     Inwentaryzacja[]
+  potwierdzenia      InwentaryzacjaPozycja[]
 
   @@map("app_users")
 }
@@ -129,6 +136,8 @@ model Computer {
 
   aktualnyUzytkownik Employee?         @relation(fields: [aktualnyUzytkownikId], references: [id])
   onboardingSesje    OnboardingSesja[]
+  odczytKody         OdczytKod[]
+  odczyty            OdczytSprzetu[]
 
   @@index([aktualnyUzytkownikId])
   @@map("computers")
@@ -511,4 +520,129 @@ model OnboardingSesja {
 
   @@index([computerId])
   @@map("onboarding_sesje")
+}
+
+// ---------------------------------------------------------------------------
+// Odczyt sprzętu — dane wysłane z komputera przez skrypt PowerShell
+// (jednolinijkowiec, koniec skryptu onboardingu albo wgrany plik JSON)
+// ---------------------------------------------------------------------------
+
+/// Kod do jednolinijkowca `irm …/odczyt/<kod> | iex`. Wielokrotnego użytku — jednym
+/// kodem można obejść wiele komputerów — i ważny kilka dni. Kod przypięty do komputera
+/// (`computerId`) kieruje każdy odczyt do tego komputera, bez dopasowywania.
+model OdczytKod {
+  id                Int      @id @default(autoincrement())
+  kod               String   @unique
+  computerId        Int?
+  wygasaAt          DateTime
+  createdAt         DateTime @default(now())
+  utworzylAppUserId Int?
+
+  computer        Computer?       @relation(fields: [computerId], references: [id], onDelete: Cascade)
+  utworzylAppUser AppUser?        @relation(fields: [utworzylAppUserId], references: [id], onDelete: SetNull)
+  odczyty         OdczytSprzetu[]
+
+  @@index([computerId])
+  @@map("odczyt_kody")
+}
+
+/// Odebrany odczyt: surowe dane w JSON (DaneOdczytu z shared/) czekające na przegląd.
+/// Admin wybiera pola do przepisania do komputera — nic nie jest nadpisywane samo.
+/// `hostname`/`numerSeryjny` są wyciągnięte z JSON-a tylko na potrzeby listy i wyszukiwania.
+model OdczytSprzetu {
+  id                  Int       @id @default(autoincrement())
+  kodId               Int?
+  zrodlo              String // ZrodloOdczytu: 'SKRYPT' | 'ONBOARDING' | 'PLIK'
+  status              String    @default("NOWY") // StatusOdczytu
+  computerId          Int?
+  dopasowanie         String? // DopasowanieOdczytu — null = nie znaleziono komputera
+  hostname            String?
+  numerSeryjny        String?
+  dane                String
+  otrzymanoAt         DateTime  @default(now())
+  rozpatrzonoAt       DateTime?
+  rozpatrzylAppUserId Int?
+
+  kod               OdczytKod? @relation(fields: [kodId], references: [id], onDelete: SetNull)
+  computer          Computer?  @relation(fields: [computerId], references: [id], onDelete: SetNull)
+  rozpatrzylAppUser AppUser?   @relation(fields: [rozpatrzylAppUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([computerId])
+  @@map("odczyty_sprzetu")
+}
+
+// ---------------------------------------------------------------------------
+// Zwrot sprzętu (także przy odejściu pracownika) — protokół zwrotu w PDF
+// ---------------------------------------------------------------------------
+
+/// Zwrot sprzętu przez pracownika. `pozycje` (zwrócone) i `pozostale` (zostały u pracownika)
+/// to migawki JSON: typ, identyfikator, nr seryjny, model, uwagi. Protokół PDF powstaje
+/// z migawki, więc zawsze wygląda tak samo — nawet gdy sprzęt później zmieni dane,
+/// trafi do kogoś innego, a zwrócone „Różne” zostały już usunięte.
+model ZwrotSprzetu {
+  id                Int      @id @default(autoincrement())
+  employeeId        Int
+  odejscie          Boolean  @default(false)
+  pozycje           String
+  pozostale         String
+  notatka           String?
+  createdAt         DateTime @default(now())
+  utworzylAppUserId Int?
+
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  utworzylAppUser AppUser? @relation(fields: [utworzylAppUserId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@map("zwroty_sprzetu")
+}
+
+// ---------------------------------------------------------------------------
+// Spis z natury (inwentaryzacja) — potwierdzanie obecności sprzętu skanem
+// naklejki z kodem QR albo ręcznie z listy
+// ---------------------------------------------------------------------------
+
+/// Inwentaryzacja: przy rozpoczęciu zapisuje listę sprzętu, który powinien się znaleźć
+/// (cała firma albo sprzęt pracowników jednego działu), potem zbiera potwierdzenia.
+model Inwentaryzacja {
+  id                Int       @id @default(autoincrement())
+  nazwa             String
+  dzialId           Int? // null = cała firma
+  status            String    @default("OTWARTA") // StatusInwentaryzacji: 'OTWARTA' | 'ZAMKNIETA'
+  createdAt         DateTime  @default(now())
+  zamknietaAt       DateTime?
+  utworzylAppUserId Int?
+
+  dzial           Department?             @relation(fields: [dzialId], references: [id], onDelete: SetNull)
+  utworzylAppUser AppUser?                @relation(fields: [utworzylAppUserId], references: [id], onDelete: SetNull)
+  pozycje         InwentaryzacjaPozycja[]
+
+  @@index([status])
+  @@map("inwentaryzacje")
+}
+
+/// Pozycja spisu: sprzęt (dyskryminator sprzetTyp + sprzetId, jak w historii przypisań)
+/// z migawką danych z chwili rozpoczęcia — raport pokazuje, gdzie sprzęt POWINIEN był być,
+/// nawet jeśli później zmienił użytkownika. `spozaListy` = znaleziony przy skanowaniu,
+/// choć nie było go na liście (np. sprzęt innego działu albo nieprzypisany).
+model InwentaryzacjaPozycja {
+  id                   Int       @id @default(autoincrement())
+  inwentaryzacjaId     Int
+  sprzetTyp            String // TypZEtykieta
+  sprzetId             Int
+  identyfikator        String
+  opis                 String?
+  uzytkownik           String? // „Jan Nowak” albo lokalizacja drukarki
+  dzial                String? // do grupowania raportu braków
+  spozaListy           Boolean   @default(false)
+  potwierdzonoAt       DateTime?
+  potwierdzilAppUserId Int?
+  uwagi                String?
+
+  inwentaryzacja     Inwentaryzacja @relation(fields: [inwentaryzacjaId], references: [id], onDelete: Cascade)
+  potwierdzilAppUser AppUser?       @relation(fields: [potwierdzilAppUserId], references: [id], onDelete: SetNull)
+
+  @@unique([inwentaryzacjaId, sprzetTyp, sprzetId])
+  @@index([sprzetTyp, sprzetId])
+  @@map("inwentaryzacja_pozycje")
 }

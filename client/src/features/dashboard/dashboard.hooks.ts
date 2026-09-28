@@ -17,6 +17,9 @@ export interface DashboardStats {
   alerts: {
     lowToners: { id: number; oznaczenie: string; ilosc: number }[];
     expiringSimCards: { id: number; numerTelefonu: string; iccid: string; dataKoncaUmowy: string }[];
+    /** Odczyty danych sprzętu (skrypt/onboarding/plik) czekające na przejrzenie. */
+    odczytyDoPrzejrzenia: number;
+    inwentaryzacjeWToku: { id: number; nazwa: string; liczbaPozycji: number; liczbaPotwierdzonych: number }[];
   };
 }
 

@@ -28,6 +28,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.3.0",
     "pdfmake": "^0.2.15",
+    "qrcode-generator": "^2.0.4",
     "shared": "*",
     "zod": "^3.24.1"
   },
