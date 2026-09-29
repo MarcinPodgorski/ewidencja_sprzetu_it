@@ -71,16 +71,16 @@ export function PrintersListPage() {
         }
       />
 
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         <input
           type="text"
           placeholder="Szukaj…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="input max-w-xs"
+          className="input col-span-2 sm:max-w-xs"
         />
         <select
-          className="input max-w-[10rem]"
+          className="input sm:max-w-[10rem]"
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
         >

@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler } from '../../middleware/errorHandler';
+import { stanKopii } from '../kopie/kopie.service';
+import { licznikiStanuFloty, obliczStanFloty } from '../stanFloty/stanFloty.service';
 
 export const dashboardRouter = Router();
 
@@ -66,9 +68,24 @@ dashboardRouter.get(
       return { ...inw, liczbaPozycji: zListy.length, liczbaPotwierdzonych: zListy.filter((p) => p.potwierdzonoAt).length };
     });
 
+    // Kopie zapasowe: alarm, gdy automatyczne kopie są włączone, a ostatnia jest starsza niż
+    // 48 h albo ostatnia próba się nie udała (np. brak miejsca, brak uprawnień do katalogu).
+    const kopie = await stanKopii();
+    const wiekOstatniej = kopie.ostatnia ? Date.now() - new Date(kopie.ostatnia.utworzono).getTime() : Infinity;
+    const problemKopii = kopie.ostatniBlad
+      ? `Ostatnia próba utworzenia kopii nie powiodła się: ${kopie.ostatniBlad.komunikat}`
+      : kopie.automatyczne && wiekOstatniej > 48 * 60 * 60 * 1000
+        ? kopie.ostatnia
+          ? 'Ostatnia kopia zapasowa jest starsza niż 2 dni.'
+          : 'Nie ma jeszcze żadnej kopii zapasowej.'
+        : null;
+
+    const stanFloty = licznikiStanuFloty(await obliczStanFloty());
+
     res.json({
       counts: { computers, monitors, mice, keyboards, phones, simCards, printers, employees, appUsers, equipmentLists },
-      alerts: { lowToners, expiringSimCards, odczytyDoPrzejrzenia, inwentaryzacjeWToku },
+      alerts: { lowToners, expiringSimCards, odczytyDoPrzejrzenia, inwentaryzacjeWToku, problemKopii, stanFloty },
+      kopie: { ostatnia: kopie.ostatnia?.utworzono ?? null, automatyczne: kopie.automatyczne },
     });
   }),
 );

@@ -6,24 +6,11 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { HistoryTable } from '../../components/HistoryTable';
 import { AssignmentPanel } from '../../components/AssignmentPanel';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { HistoriaZmian } from '../../components/HistoriaZmian';
 import { MaskedField } from '../../components/MaskedField';
 import { EquipmentFakturyList } from '../faktury/EquipmentFakturyList';
-import type { EquipmentFormFieldConfig, EquipmentTypeConfig } from './types';
-
-function formatValue(value: unknown, field: EquipmentFormFieldConfig): string {
-  if (value === null || value === undefined || value === '') return '—';
-  if (field.displayFormat === 'money' && typeof value === 'number') {
-    return `${(value / 100).toFixed(2)} zł`;
-  }
-  if (field.type === 'checkbox') return value ? 'Tak' : 'Nie';
-  if (field.type === 'select' && field.options) {
-    return field.options.find((o) => o.value === value)?.label ?? String(value);
-  }
-  if (field.type === 'date' && typeof value === 'string') {
-    return new Date(value).toLocaleDateString('pl-PL');
-  }
-  return String(value);
-}
+import { formatujWartoscPola } from './formatowanie';
+import type { EquipmentTypeConfig } from './types';
 
 export function EquipmentDetailPage<
   T extends {
@@ -110,7 +97,7 @@ export function EquipmentDetailPage<
                   ) : f.renderDetail ? (
                     f.renderDetail((item as Record<string, unknown>)[f.name])
                   ) : (
-                    formatValue((item as Record<string, unknown>)[f.name], f)
+                    formatujWartoscPola((item as Record<string, unknown>)[f.name], f)
                   )}
                 </dd>
               </div>
@@ -134,6 +121,15 @@ export function EquipmentDetailPage<
         <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Historia przypisań</h2>
         <HistoryTable history={history} />
       </div>
+
+      <HistoriaZmian
+        encja={config.sprzetTyp}
+        encjaId={item.id}
+        kluczOdswiezania={config.routeBase.slice(1)}
+        pola={Object.fromEntries(
+          config.formFields.map((f) => [f.name, { etykieta: f.label, format: (v) => formatujWartoscPola(v, f) }]),
+        )}
+      />
 
       <ConfirmDialog
         open={confirmArchive}

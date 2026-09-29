@@ -102,6 +102,7 @@ model AppUser {
   zwroty             ZwrotSprzetu[]
   inwentaryzacje     Inwentaryzacja[]
   potwierdzenia      InwentaryzacjaPozycja[]
+  zmianyDanych       ZmianaDanych[]
 
   @@map("app_users")
 }
@@ -138,6 +139,7 @@ model Computer {
   onboardingSesje    OnboardingSesja[]
   odczytKody         OdczytKod[]
   odczyty            OdczytSprzetu[]
+  odczytAgenci       OdczytAgent[]
 
   @@index([aktualnyUzytkownikId])
   @@map("computers")
@@ -498,6 +500,17 @@ model UstawieniaOnboardingu {
   @@map("ustawienia_onboardingu")
 }
 
+/// Ustawienia Stanu floty (jeden wiersz, id = 1).
+model UstawieniaStanuFloty {
+  id           Int      @id @default(1)
+  /// JSON: sekcje, których dział IT nie śledzi (np. świadomie zostające Windowsy 10) —
+  /// niewidoczne na stronie i nieliczone na pulpicie.
+  ukryteSekcje String   @default("[]")
+  updatedAt    DateTime @updatedAt
+
+  @@map("ustawienia_stanu_floty")
+}
+
 /// Wygenerowany skrypt onboardingu dla konkretnego komputera i pracownika.
 /// `konfiguracja` to migawka JSON wybranych opcji (programy, komunikat, login…) —
 /// późniejsze zmiany w katalogu nie zmieniają już wygenerowanego skryptu.
@@ -552,24 +565,49 @@ model OdczytKod {
 model OdczytSprzetu {
   id                  Int       @id @default(autoincrement())
   kodId               Int?
-  zrodlo              String // ZrodloOdczytu: 'SKRYPT' | 'ONBOARDING' | 'PLIK'
+  agentId             Int?
+  zrodlo              String // ZrodloOdczytu: 'SKRYPT' | 'ONBOARDING' | 'PLIK' | 'AGENT'
   status              String    @default("NOWY") // StatusOdczytu
   computerId          Int?
   dopasowanie         String? // DopasowanieOdczytu — null = nie znaleziono komputera
   hostname            String?
   numerSeryjny        String?
   dane                String
+  /// JSON: pola, w których po decyzji admina ewidencja świadomie różni się od odczytu
+  /// (pominięte albo wpisane inaczej) — te same różnice w kolejnych odczytach są wyciszane.
+  pominietePola       String?
   otrzymanoAt         DateTime  @default(now())
   rozpatrzonoAt       DateTime?
   rozpatrzylAppUserId Int?
 
-  kod               OdczytKod? @relation(fields: [kodId], references: [id], onDelete: SetNull)
-  computer          Computer?  @relation(fields: [computerId], references: [id], onDelete: SetNull)
-  rozpatrzylAppUser AppUser?   @relation(fields: [rozpatrzylAppUserId], references: [id], onDelete: SetNull)
+  kod               OdczytKod?   @relation(fields: [kodId], references: [id], onDelete: SetNull)
+  agent             OdczytAgent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  computer          Computer?    @relation(fields: [computerId], references: [id], onDelete: SetNull)
+  rozpatrzylAppUser AppUser?     @relation(fields: [rozpatrzylAppUserId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([computerId])
   @@map("odczyty_sprzetu")
+}
+
+/// Odczyt cykliczny: zadanie w Harmonogramie zadań Windows (konto SYSTEM, co tydzień) wysyła
+/// odczyt tym stałym tokenem. Token trafia do komputera przy instalacji (jednolinijkowiec
+/// jako administrator albo krok onboardingu) i jest przypinany do komputera od razu albo przy
+/// pierwszym odczycie. Na komputer przypada jeden aktywny token; wyłączenie = odrzucanie odczytów.
+model OdczytAgent {
+  id         Int       @id @default(autoincrement())
+  token      String    @unique
+  computerId Int?
+  aktywny    Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  ostatnioAt DateTime?
+  hostname   String?
+
+  computer Computer?       @relation(fields: [computerId], references: [id], onDelete: SetNull)
+  odczyty  OdczytSprzetu[]
+
+  @@index([computerId])
+  @@map("odczyt_agenci")
 }
 
 // ---------------------------------------------------------------------------
@@ -645,4 +683,28 @@ model InwentaryzacjaPozycja {
   @@unique([inwentaryzacjaId, sprzetTyp, sprzetId])
   @@index([sprzetTyp, sprzetId])
   @@map("inwentaryzacja_pozycje")
+}
+
+// ---------------------------------------------------------------------------
+// Historia zmian danych (kto, kiedy, co zmienił) — sprzęt i pracownicy
+// ---------------------------------------------------------------------------
+
+/// Wpis dziennika zmian. Zapisywany jawnie przez endpointy (a nie rozszerzenie klienta
+/// Prisma), bo tylko one wiedzą, kto jest zalogowany i w jakim kontekście nastąpiła
+/// zmiana (np. „odczyt sprzętu”, „import”). `zmiany` to JSON: [{ pole, przed, po }];
+/// wartości wrażliwe (PIN-y, kody) są w nim zamaskowane.
+model ZmianaDanych {
+  id        Int      @id @default(autoincrement())
+  encja     String // EquipmentType albo 'PRACOWNIK'
+  encjaId   Int
+  operacja  String // OperacjaZmiany: 'UTWORZENIE' | 'EDYCJA' | 'WYCOFANIE' | 'PRZYWROCENIE'
+  zmiany    String
+  kontekst  String?
+  appUserId Int?
+  createdAt DateTime @default(now())
+
+  appUser AppUser? @relation(fields: [appUserId], references: [id], onDelete: SetNull)
+
+  @@index([encja, encjaId])
+  @@map("zmiany_danych")
 }

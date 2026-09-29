@@ -42,7 +42,7 @@ export function FakturyListPage() {
           placeholder="Szukaj po numerze / numerze KSeF…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="input max-w-xs"
+          className="input col-span-2 sm:max-w-xs"
         />
       </div>
 

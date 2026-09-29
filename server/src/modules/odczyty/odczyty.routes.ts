@@ -15,9 +15,10 @@ import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
 import { wygenerujKod } from '../../utils/kodDostepu';
+import { zapiszZmiane } from '../historiaZmian/historiaZmian.service';
 import { adresApi } from '../onboarding/adresApi';
 import { mapujOdczyt } from './mapowanie';
-import { daneZapisane, zapiszOdczyt } from './odczyty.service';
+import { daneZapisane, listaPominietych, polaRozne, zapiszOdczyt } from './odczyty.service';
 import { generujSkryptOdczytu } from './skryptOdczytu';
 
 export const odczytyRouter = Router();
@@ -56,6 +57,7 @@ function serializujOdczyt({ dane, ...odczyt }: OdczytZRelacjami) {
   return {
     ...odczyt,
     markaModel,
+    pominietePola: listaPominietych(odczyt.pominietePola),
     // ODRZUCONY bez osoby = system zastąpił go nowszym odczytem tego samego komputera.
     zastapiony: odczyt.status === 'ODRZUCONY' && odczyt.rozpatrzylAppUserId === null,
   };
@@ -146,6 +148,33 @@ odczytyRouter.get(
 );
 
 // ---------------------------------------------------------------------------
+// Odczyt cykliczny — tokeny zadań na komputerach
+// ---------------------------------------------------------------------------
+
+odczytyRouter.get(
+  '/agenci',
+  asyncHandler(async (req, res) => {
+    const computerId = computerIdZapytania.parse(req.query.computerId);
+    const agenci = await prisma.odczytAgent.findMany({
+      where: computerId ? { computerId } : {},
+      select: { id: true, computerId: true, aktywny: true, createdAt: true, ostatnioAt: true, hostname: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ items: agenci });
+  }),
+);
+
+/** Wyłączenie tokenu: kolejne odczyty z tego komputera będą odrzucane (zadanie może zostać). */
+odczytyRouter.post(
+  '/agenci/:id/wylacz',
+  asyncHandler(async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    await prisma.odczytAgent.update({ where: { id }, data: { aktywny: false } });
+    res.status(204).end();
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Odczyty
 // ---------------------------------------------------------------------------
 
@@ -216,11 +245,31 @@ odczytyRouter.post(
     if (!odczyt.computerId) {
       throw new AppError(400, 'Odczyt nie jest powiązany z komputerem — wskaż komputer albo utwórz nowy');
     }
-    const rozpatrzenie = { status: 'ZASTOSOWANY', rozpatrzonoAt: new Date(), rozpatrzylAppUserId: req.user!.id };
-    await prisma.$transaction([
-      prisma.computer.update({ where: { id: odczyt.computerId }, data: pola }),
-      prisma.odczytSprzetu.update({ where: { id }, data: rozpatrzenie }),
-    ]);
+    const computerId = odczyt.computerId;
+    const { propozycja } = mapujOdczyt(daneZapisane(odczyt.dane));
+    await prisma.$transaction(async (tx) => {
+      const przed = await tx.computer.findUnique({ where: { id: computerId } });
+      const po = await tx.computer.update({ where: { id: computerId }, data: pola });
+      await tx.odczytSprzetu.update({
+        where: { id },
+        data: {
+          status: 'ZASTOSOWANY',
+          rozpatrzonoAt: new Date(),
+          rozpatrzylAppUserId: req.user!.id,
+          pominietePola: JSON.stringify(polaRozne(propozycja, po)),
+        },
+      });
+      await zapiszZmiane({
+        klient: tx,
+        encja: 'KOMPUTER',
+        encjaId: computerId,
+        operacja: 'EDYCJA',
+        przed,
+        po,
+        appUserId: req.user!.id,
+        kontekst: `odczyt sprzętu #${id}`,
+      });
+    });
     res.json({ item: serializujOdczyt(await pobierzOdczyt(id)) });
   }),
 );
@@ -230,11 +279,22 @@ odczytyRouter.post(
   asyncHandler(async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { komputer } = odczytUtworzKomputerSchema.parse(req.body);
-    wymagajNowego(await pobierzOdczyt(id));
+    const odczyt = await pobierzOdczyt(id);
+    wymagajNowego(odczyt);
+    const { propozycja } = mapujOdczyt(daneZapisane(odczyt.dane));
     const zajety = await prisma.computer.findUnique({ where: { numerEwidencyjny: komputer.numerEwidencyjny } });
     if (zajety) throw new AppError(409, `Komputer o numerze ewidencyjnym ${komputer.numerEwidencyjny} już istnieje`);
     const utworzony = await prisma.$transaction(async (tx) => {
       const nowy = await tx.computer.create({ data: komputer });
+      await zapiszZmiane({
+        klient: tx,
+        encja: 'KOMPUTER',
+        encjaId: nowy.id,
+        operacja: 'UTWORZENIE',
+        po: nowy,
+        appUserId: req.user!.id,
+        kontekst: `odczyt sprzętu #${id}`,
+      });
       await tx.odczytSprzetu.update({
         where: { id },
         data: {
@@ -243,6 +303,7 @@ odczytyRouter.post(
           status: 'ZASTOSOWANY',
           rozpatrzonoAt: new Date(),
           rozpatrzylAppUserId: req.user!.id,
+          pominietePola: JSON.stringify(polaRozne(propozycja, nowy)),
         },
       });
       return nowy;

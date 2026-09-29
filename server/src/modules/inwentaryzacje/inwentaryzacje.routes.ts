@@ -257,7 +257,7 @@ inwentaryzacjeRouter.get(
     });
     if (!inwentaryzacja) throw new AppError(404, 'Nie znaleziono inwentaryzacji');
     const pdf = new PdfPrinter(fontDescriptors).createPdfKitDocument(buildRaportInwentaryzacjiDocDefinition(inwentaryzacja));
-    const nazwa = inwentaryzacja.nazwa.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[łŁ]/g, 'l').replace(/[^A-Za-z0-9-]+/g, '-');
+    const nazwa = inwentaryzacja.nazwa.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[łŁ]/g, 'l').replace(/[^A-Za-z0-9-]+/g, '-');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="raport-${nazwa}.pdf"`);
     pdf.pipe(res);

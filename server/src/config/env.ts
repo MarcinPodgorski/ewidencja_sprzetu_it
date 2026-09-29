@@ -18,6 +18,23 @@ const envSchema = z.object({
     .optional()
     .transform((v) => v === 'true'),
   APP_BASE_PATH: z.string().default('/sprzet'),
+  /** Katalog kopii zapasowych (baza + wgrane pliki). Względny = względem server/. */
+  BACKUP_DIR: z.string().default('backups'),
+  /** Ile dni przechowywać kopie (najnowsze trzy zostają zawsze). */
+  BACKUP_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(30),
+  /** Godzina codziennej automatycznej kopii (czas lokalny serwera). */
+  BACKUP_HOUR: z.coerce.number().int().min(0).max(23).default(2),
+  /** Automatyczne kopie: domyślnie włączone tylko w produkcji. */
+  BACKUP_AUTO: z.enum(['true', 'false']).optional(),
+  /** Ustawiane w obrazie Dockera — strona kopii pokazuje wtedy polecenia dla docker compose. */
+  RUNS_IN_DOCKER: z.enum(['true', 'false']).optional(),
+  /** Wgrane pliki (załączniki faktur, instalatory). Względny = względem server/. */
+  UPLOADS_DIR: z.string().default('uploads'),
+  /** Hasło konta „admin” zakładanego przy pierwszym starcie na pustej bazie (brak = losowe, w logu). */
+  INITIAL_ADMIN_PASSWORD: z.preprocess(
+    (v) => (v === '' ? undefined : v), // docker compose przekazuje niepodaną zmienną jako pusty tekst
+    z.string().min(8, 'INITIAL_ADMIN_PASSWORD: minimum 8 znaków').optional(),
+  ),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -47,5 +64,15 @@ if (data.DATABASE_URL.startsWith('file:') && !data.DATABASE_URL.startsWith('file
   process.env.DATABASE_URL = data.DATABASE_URL;
 }
 
-export const env = data;
+/** Kopie zapasowe i wgrane pliki: ścieżki bezwzględne (jak przy bazie — cwd różni się między dev a PM2). */
+const wzgledemServera = (sciezka: string) => (path.isAbsolute(sciezka) ? sciezka : path.resolve(__dirname, '../..', sciezka));
+const backupDir = wzgledemServera(data.BACKUP_DIR);
+
+export const env = {
+  ...data,
+  BACKUP_DIR: backupDir,
+  UPLOADS_DIR: wzgledemServera(data.UPLOADS_DIR),
+  RUNS_IN_DOCKER: data.RUNS_IN_DOCKER === 'true',
+  BACKUP_AUTO: data.BACKUP_AUTO ? data.BACKUP_AUTO === 'true' : data.NODE_ENV === 'production',
+};
 export type Env = typeof env;

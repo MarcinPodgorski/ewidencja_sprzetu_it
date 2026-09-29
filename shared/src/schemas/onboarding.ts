@@ -79,6 +79,8 @@ export const onboardingSesjaCreateSchema = z
     oprogramowanieIds: z.array(z.coerce.number().int().positive()).default([]),
     /** Microsoft 365 Apps (Word, Excel, Outlook…) — tylko dla licencji z aplikacjami desktopowymi. */
     m365Apps: z.boolean().default(false),
+    /** Zadanie w Harmonogramie zadań wysyłające co tydzień odczyt sprzętu do ewidencji. */
+    odczytCykliczny: z.boolean().default(true),
     przypiszDoPracownika: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {

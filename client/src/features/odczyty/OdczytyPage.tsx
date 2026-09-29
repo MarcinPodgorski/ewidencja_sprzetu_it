@@ -8,7 +8,7 @@ import { ApiError, apiUrl } from '../../lib/api';
 import type { OdczytSprzetu } from '../../types/entities';
 import { formatujDate } from '../onboarding/utils';
 import { useImportOdczytu, useOdczytKody, useOdczyty, useUniewaznijKodOdczytu, useUtworzKodOdczytu } from './odczyty.hooks';
-import { StatusOdczytuBadge, komendaOdczytu } from './utils';
+import { StatusOdczytuBadge, komendaOdczytu, komendaOdczytuCyklicznego } from './utils';
 
 const kolumny: Column<OdczytSprzetu>[] = [
   {
@@ -86,6 +86,13 @@ function KartaSkryptu() {
             </a>
             .
           </p>
+          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700/60">
+            <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
+              <strong>Odczyt cykliczny</strong> — w <strong>Terminalu jako administrator</strong>: zakłada zadanie, które co tydzień
+              wyśle odczyt tego komputera. Odczyty bez zmian nie trafiają na listę do przejrzenia.
+            </p>
+            <KomendaDoSkopiowania komenda={komendaOdczytuCyklicznego(kod.kod)} />
+          </div>
         </>
       ) : (
         <button type="button" className="btn-primary" disabled={utworz.isPending} onClick={() => utworz.mutate(undefined)}>

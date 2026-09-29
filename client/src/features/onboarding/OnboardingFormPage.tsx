@@ -44,6 +44,7 @@ export function OnboardingFormPage() {
   const [profilId, setProfilId] = useState('');
   const [wybrane, setWybrane] = useState<Set<number>>(new Set());
   const [m365Apps, setM365Apps] = useState(false);
+  const [odczytCykliczny, setOdczytCykliczny] = useState(true);
   const [przypisz, setPrzypisz] = useState(true);
   const [bledy, setBledy] = useState<Bledy>({});
 
@@ -105,6 +106,7 @@ export function OnboardingFormPage() {
       komunikat: komunikatWlaczony ? { tytul: komunikatTytul, tresc: komunikatTresc } : null,
       oprogramowanieIds: [...wybrane],
       m365Apps,
+      odczytCykliczny,
       przypiszDoPracownika: przypisz,
     };
 
@@ -337,6 +339,22 @@ export function OnboardingFormPage() {
               <span className="block text-xs text-gray-500 dark:text-gray-400">
                 Tylko dla licencji z aplikacjami desktopowymi, np. Business Standard. Business Basic ma wyłącznie wersje w
                 przeglądarce — tam zostaw to pole puste.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 border-t border-gray-100 pt-3 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 dark:border-gray-600 dark:bg-gray-800"
+              checked={odczytCykliczny}
+              onChange={(e) => setOdczytCykliczny(e.target.checked)}
+            />
+            <span>
+              <span className="font-medium">Odczyt cykliczny do ewidencji</span> — co tydzień
+              <span className="block text-xs text-gray-500 dark:text-gray-400">
+                Zadanie w Harmonogramie zadań wysyła dane sprzętu (model, pamięć, dyski, Windows, BitLocker). Zmiany zobaczysz na
+                karcie komputera i w Stanie floty.
               </span>
             </span>
           </label>

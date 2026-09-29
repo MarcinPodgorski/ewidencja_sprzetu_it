@@ -103,9 +103,33 @@ export function normalizujProducenta(surowy: string): string {
   return bezFormy;
 }
 
+/** Producenci płyt głównych — u nich „model” komputera składanego to często kod płyty. */
+const PRODUCENCI_PLYT = new Set(['MSI', 'ASUS', 'Gigabyte', 'ASRock']);
+
+function opisSkladaka(d: DaneOdczytu): string | undefined {
+  if (!d.plytaModel || czyWartoscZastepcza(d.plytaModel)) return undefined;
+  const producent = d.plytaProducent && !czyWartoscZastepcza(d.plytaProducent) ? normalizujProducenta(d.plytaProducent) : null;
+  // „B450 GAMING PLUS MAX (MS-7B86)” — kod w nawiasie nic nie mówi przy spisie (ale „(WI-FI)”
+  // to wariant płyty, więc usuwamy tylko nawias z kodem zawierającym cyfrę).
+  const plyta = d.plytaModel.replace(/\s*\((?=[A-Z-]*\d)[A-Z0-9-]+\)\s*$/i, '').trim();
+  return `Komputer składany (płyta ${[producent, plyta].filter(Boolean).join(' ')})`;
+}
+
 function markaModel(d: DaneOdczytu): string | undefined {
   const producent = d.producent && !czyWartoscZastepcza(d.producent) ? normalizujProducenta(d.producent) : null;
   let model = d.model && !czyWartoscZastepcza(d.model) ? d.model : null;
+  // Składak na płycie MSI/ASUS/Gigabyte/ASRock: w polu modelu jest kod albo nazwa płyty
+  // (np. MSI podaje „MS-7B86”, a płyta to „B450 GAMING PLUS MAX (MS-7B86)”). Laptop tego
+  // producenta ma tu nazwę produktu, różną od płyty — więc go ta reguła nie dotyczy.
+  if (
+    producent &&
+    PRODUCENCI_PLYT.has(producent) &&
+    model &&
+    d.plytaModel &&
+    d.plytaModel.toUpperCase().includes(model.trim().toUpperCase())
+  ) {
+    return opisSkladaka(d);
+  }
   // Lenovo: Model to kod maszyny (np. 21AH00BWPB), a nazwa handlowa jest w Version.
   if (producent === 'Lenovo' && d.modelWersja && !czyWartoscZastepcza(d.modelWersja) && !/^lenovo$/i.test(d.modelWersja)) {
     model = d.modelWersja;
@@ -116,12 +140,7 @@ function markaModel(d: DaneOdczytu): string | undefined {
     return czysty;
   }
   // Komputer składany: w polach systemu są wartości zastępcze, zostaje płyta główna.
-  if (d.plytaModel && !czyWartoscZastepcza(d.plytaModel)) {
-    const plytaProducent =
-      d.plytaProducent && !czyWartoscZastepcza(d.plytaProducent) ? normalizujProducenta(d.plytaProducent) : null;
-    return `Komputer składany (płyta ${[plytaProducent, d.plytaModel.trim()].filter(Boolean).join(' ')})`;
-  }
-  return producent ?? undefined;
+  return opisSkladaka(d) ?? producent ?? undefined;
 }
 
 function numerSeryjny(d: DaneOdczytu): string | undefined {

@@ -151,31 +151,34 @@ export function edycjaWindowsa(system: SystemOperacyjny | null | undefined): 'HO
  * przez skrypt onboardingu albo wgrane jako plik JSON. Nic nie trafia do ewidencji
  * automatycznie: admin przegląda odczyt i wybiera pola do przepisania.
  */
-export const STATUSY_ODCZYTU = ['NOWY', 'ZASTOSOWANY', 'ODRZUCONY'] as const;
+export const STATUSY_ODCZYTU = ['NOWY', 'ZASTOSOWANY', 'ODRZUCONY', 'BEZ_ZMIAN'] as const;
 export type StatusOdczytu = (typeof STATUSY_ODCZYTU)[number];
 
 export const STATUS_ODCZYTU_LABELS: Record<StatusOdczytu, string> = {
   NOWY: 'Do przejrzenia',
   ZASTOSOWANY: 'Zastosowany',
   ODRZUCONY: 'Odrzucony',
+  BEZ_ZMIAN: 'Bez zmian',
 };
 
-export const ZRODLA_ODCZYTU = ['SKRYPT', 'ONBOARDING', 'PLIK'] as const;
+export const ZRODLA_ODCZYTU = ['SKRYPT', 'ONBOARDING', 'PLIK', 'AGENT'] as const;
 export type ZrodloOdczytu = (typeof ZRODLA_ODCZYTU)[number];
 
 export const ZRODLO_ODCZYTU_LABELS: Record<ZrodloOdczytu, string> = {
   SKRYPT: 'skrypt odczytu',
   ONBOARDING: 'skrypt onboardingu',
   PLIK: 'wgrany plik',
+  AGENT: 'odczyt cykliczny',
 };
 
 /** Jak odczyt został powiązany z komputerem w ewidencji. */
-export const DOPASOWANIA_ODCZYTU = ['KOD', 'ONBOARDING', 'NUMER_SERYJNY', 'NAZWA', 'MAC', 'RECZNIE', 'UTWORZONY'] as const;
+export const DOPASOWANIA_ODCZYTU = ['KOD', 'ONBOARDING', 'AGENT', 'NUMER_SERYJNY', 'NAZWA', 'MAC', 'RECZNIE', 'UTWORZONY'] as const;
 export type DopasowanieOdczytu = (typeof DOPASOWANIA_ODCZYTU)[number];
 
 export const DOPASOWANIE_ODCZYTU_LABELS: Record<DopasowanieOdczytu, string> = {
   KOD: 'kod przypięty do komputera',
   ONBOARDING: 'skrypt onboardingu tego komputera',
+  AGENT: 'odczyt cykliczny tego komputera',
   NUMER_SERYJNY: 'numer seryjny',
   NAZWA: 'nazwa komputera = numer ewidencyjny',
   MAC: 'adres MAC',
@@ -275,3 +278,19 @@ export const STATUS_INWENTARYZACJI_LABELS: Record<StatusInwentaryzacji, string> 
   OTWARTA: 'w toku',
   ZAMKNIETA: 'zamknięta',
 };
+
+/** Historia zmian danych: rodzaj operacji zapisanej w dzienniku. */
+export const OPERACJE_ZMIANY = ['UTWORZENIE', 'EDYCJA', 'WYCOFANIE', 'PRZYWROCENIE'] as const;
+export type OperacjaZmiany = (typeof OPERACJE_ZMIANY)[number];
+
+/** Czego dotyczy wpis historii zmian: sprzęt (typ) albo pracownik. */
+export const ENCJE_HISTORII = [...EQUIPMENT_TYPES, 'PRACOWNIK'] as const;
+export type EncjaHistorii = (typeof ENCJE_HISTORII)[number];
+
+/** Sekcje Stanu floty — każdą można ukryć, gdy dział IT jej nie śledzi (np. świadomie zostające Windowsy 10). */
+export const SEKCJE_STANU_FLOTY = ['windows10', 'bitlocker', 'entraId', 'gwarancje', 'doWymiany', 'bezOdczytu'] as const;
+export type SekcjaStanuFloty = (typeof SEKCJE_STANU_FLOTY)[number];
+
+/** Rodzaje wyników wyszukiwarki (Ctrl+K). */
+export const TYPY_WYNIKU_SZUKANIA = [...EQUIPMENT_TYPES, 'TONER', 'PRACOWNIK', 'ROZNE', 'FAKTURA', 'SPIS'] as const;
+export type TypWynikuSzukania = (typeof TYPY_WYNIKU_SZUKANIA)[number];

@@ -3,6 +3,7 @@ import type { ZodTypeAny } from 'zod';
 import { idParamSchema, assignEquipmentSchema, unassignEquipmentSchema, type EquipmentType } from 'shared';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
+import { zapiszZmiane } from '../historiaZmian/historiaZmian.service';
 import * as assignmentHistoryService from '../assignmentHistory/assignmentHistory.service';
 import type { AssignableModelName } from '../assignmentHistory/assignmentHistory.service';
 
@@ -123,6 +124,7 @@ export function createEquipmentRouter(config: EquipmentRouterConfig): Router {
     asyncHandler(async (req, res) => {
       const data = createSchema.parse(req.body);
       const item = await delegate.create({ data, include: userInclude });
+      await zapiszZmiane({ encja: sprzetTyp, encjaId: item.id, operacja: 'UTWORZENIE', po: item, appUserId: req.user!.id });
       res.status(201).json({ item });
     }),
   );
@@ -132,7 +134,9 @@ export function createEquipmentRouter(config: EquipmentRouterConfig): Router {
     asyncHandler(async (req, res) => {
       const { id } = idParamSchema.parse(req.params);
       const data = updateSchema.parse(req.body);
+      const przed = await delegate.findUnique({ where: { id } });
       const item = await delegate.update({ where: { id }, data, include: userInclude });
+      await zapiszZmiane({ encja: sprzetTyp, encjaId: id, operacja: 'EDYCJA', przed, po: item, appUserId: req.user!.id });
       res.json({ item });
     }),
   );
@@ -145,6 +149,7 @@ export function createEquipmentRouter(config: EquipmentRouterConfig): Router {
         where: { id },
         data: { wycofany: true, dataWycofania: new Date() },
       });
+      await zapiszZmiane({ encja: sprzetTyp, encjaId: id, operacja: 'WYCOFANIE', po: item, appUserId: req.user!.id });
       res.json({ item });
     }),
   );
@@ -159,6 +164,7 @@ export function createEquipmentRouter(config: EquipmentRouterConfig): Router {
         data: { wycofany: false, dataWycofania: null },
         include: userInclude,
       });
+      await zapiszZmiane({ encja: sprzetTyp, encjaId: id, operacja: 'PRZYWROCENIE', po: item, appUserId: req.user!.id });
       res.json({ item });
     }),
   );

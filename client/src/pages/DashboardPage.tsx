@@ -4,6 +4,8 @@ import {
   CardSim,
   ClipboardCheck,
   Cpu,
+  DatabaseBackup,
+  ShieldCheck,
   ClipboardList,
   KeyRound,
   Keyboard,
@@ -65,11 +67,21 @@ function AdminDashboard() {
   }
 
   const { counts, alerts } = data;
+  const flota = alerts.stanFloty;
+  const problemyFloty = [
+    { liczba: flota.windows10, tekst: 'Windows 10 bez wsparcia', powazne: true },
+    { liczba: flota.bitlocker, tekst: 'Dysk bez szyfrowania', powazne: true },
+    { liczba: flota.entraId, tekst: 'Windows Pro bez Entra ID', powazne: false },
+    { liczba: flota.gwarancje, tekst: 'Kończąca się gwarancja', powazne: false },
+    { liczba: flota.doWymiany, tekst: 'Sprzęt do wymiany (wiek)', powazne: false },
+  ].filter((p) => p.liczba > 0);
   const hasAlerts =
     alerts.lowToners.length > 0 ||
     alerts.expiringSimCards.length > 0 ||
     alerts.odczytyDoPrzejrzenia > 0 ||
-    alerts.inwentaryzacjeWToku.length > 0;
+    alerts.inwentaryzacjeWToku.length > 0 ||
+    alerts.problemKopii !== null ||
+    problemyFloty.length > 0;
 
   return (
     <div className="space-y-8">
@@ -99,6 +111,47 @@ function AdminDashboard() {
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Wymaga uwagi</h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {problemyFloty.length > 0 && (
+              <div className="card">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                    <ShieldCheck className="h-3 w-3" />
+                    stan floty</span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Sprzęt wymagający uwagi</h3>
+                </div>
+                <ul className="space-y-1 text-sm">
+                  {problemyFloty.map((p) => (
+                    <li key={p.tekst} className="flex justify-between gap-3">
+                      <span className="text-gray-600 dark:text-gray-300">{p.tekst}</span>
+                      <span className={p.powazne ? 'font-medium text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}>
+                        {p.liczba}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/stan-floty" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                  Zobacz stan floty
+                </Link>
+              </div>
+            )}
+
+            {alerts.problemKopii && (
+              <div className="card">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="badge bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300">
+                    <DatabaseBackup className="h-3 w-3" />
+                    kopie zapasowe</span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Brak aktualnej kopii</h3>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {alerts.problemKopii}{' '}
+                  <Link to="/kopie" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    Sprawdź
+                  </Link>
+                </p>
+              </div>
+            )}
+
             {alerts.inwentaryzacjeWToku.length > 0 && (
               <div className="card">
                 <div className="mb-3 flex items-center gap-2">

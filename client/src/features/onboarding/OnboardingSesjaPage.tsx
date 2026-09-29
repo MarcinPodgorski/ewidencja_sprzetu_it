@@ -176,6 +176,9 @@ export function OnboardingSesjaPage() {
               <Pozycja etykieta="OneDrive">automatyczne logowanie kontem z Windowsa</Pozycja>
             )}
             <Pozycja etykieta="Dane sprzętu">wysyła odczyt do ewidencji — do przejrzenia na karcie komputera</Pozycja>
+            <Pozycja etykieta="Odczyt cykliczny">
+              {k.tokenOdczytu ? 'co tydzień (zadanie „EwidencjaSprzetu-Odczyt”)' : 'wyłączony'}
+            </Pozycja>
             <Pozycja etykieta="Nazwa komputera">{k.nazwaKomputera} (po restarcie)</Pozycja>
             <Pozycja etykieta="Wygenerował">
               {sesja.utworzylAppUser?.login ?? '—'}, {formatujDate(sesja.createdAt)}

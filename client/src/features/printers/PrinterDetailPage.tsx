@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../components/PageHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import { HistoryTable } from '../../components/HistoryTable';
+import { HistoriaZmian, type PoleHistorii, type WartoscZmiany } from '../../components/HistoriaZmian';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { EquipmentFakturyList } from '../faktury/EquipmentFakturyList';
 import { printersApi, tonersApi } from '../entities';
@@ -15,6 +16,20 @@ function formatMoney(grosze: number): string {
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString('pl-PL');
 }
+
+const data = (v: WartoscZmiany) => (typeof v === 'string' ? new Date(v).toLocaleDateString('pl-PL') : '—');
+
+/** Etykiety pól drukarki w historii zmian (lokalizację śledzi osobna historia). */
+const POLA_HISTORII: Record<string, PoleHistorii> = {
+  numerEwidencyjny: { etykieta: 'Numer ewidencyjny' },
+  numerSeryjny: { etykieta: 'Numer seryjny' },
+  markaModel: { etykieta: 'Marka/model' },
+  adresIP: { etykieta: 'Adres IP' },
+  mac: { etykieta: 'MAC' },
+  dataZakupu: { etykieta: 'Data zakupu', format: data },
+  dataKoncaGwarancji: { etykieta: 'Data końca gwarancji', format: data },
+  kosztBruttoGrosze: { etykieta: 'Koszt brutto', format: (v) => (typeof v === 'number' ? `${(v / 100).toFixed(2)} zł` : '—') },
+};
 
 export function PrinterDetailPage() {
   const { id } = useParams();
@@ -205,6 +220,7 @@ export function PrinterDetailPage() {
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Historia lokalizacji</h2>
         <HistoryTable history={history} />
+        <HistoriaZmian encja="DRUKARKA" encjaId={printer.id} kluczOdswiezania="printers" pola={POLA_HISTORII} />
       </div>
 
       <ConfirmDialog

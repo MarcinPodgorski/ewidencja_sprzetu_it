@@ -39,9 +39,9 @@ export const macAddressSchema = emptyToNull(
 /** Prosty string wymagany, przycięty, niepusty — powtarzalny building block dla pól tekstowych. */
 export const requiredString = (label: string, max = 255) =>
   z
-    .string({ required_error: `${label} jest wymagane` })
+    .string({ required_error: `Pole „${label}” jest wymagane` })
     .trim()
-    .min(1, `${label} jest wymagane`)
+    .min(1, `Pole „${label}” jest wymagane`)
     .max(max, `${label}: maksymalnie ${max} znaków`);
 
 export const optionalString = (max = 255) => z.string().trim().max(max).nullish();

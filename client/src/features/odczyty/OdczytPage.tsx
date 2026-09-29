@@ -162,6 +162,9 @@ function FormularzZastosowania({ odczyt }: { odczyt: OdczytSzczegoly & { kompute
   }
 
   const liczbaZmian = zaznaczone.size;
+  const liczbaRoznic = POLA_ODCZYTU.filter(
+    (p) => odczyt.propozycja[p] !== undefined && !takieSame(komputer[p], odczyt.propozycja[p]),
+  ).length;
 
   return (
     <form onSubmit={onSubmit} className="card mb-6 p-0">
@@ -169,6 +172,8 @@ function FormularzZastosowania({ odczyt }: { odczyt: OdczytSzczegoly & { kompute
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Zmiany do zapisania w ewidencji</h2>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
           Zaznaczone są pola, które różnią się od ewidencji. Wartość z odczytu możesz poprawić przed zapisaniem.
+          Różnica, której nie zapiszesz, zostanie zapamiętana — kolejne odczyty cykliczne zgłoszą ją dopiero, gdy
+          komputer poda w tym polu coś innego.
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -222,7 +227,9 @@ function FormularzZastosowania({ odczyt }: { odczyt: OdczytSzczegoly & { kompute
             ? 'Zapisywanie…'
             : liczbaZmian > 0
               ? `Zapisz w ewidencji (${liczbaZmian} ${odmiana(liczbaZmian, ['pole', 'pola', 'pól'])})`
-              : 'Wszystko się zgadza — oznacz jako przejrzany'}
+              : liczbaRoznic > 0
+                ? 'Zostaw ewidencję bez zmian'
+                : 'Wszystko się zgadza — oznacz jako przejrzany'}
         </button>
       </div>
     </form>
@@ -486,7 +493,17 @@ function PodgladOdczytu({ odczyt }: { odczyt: OdczytSzczegoly }) {
           {POLA_ODCZYTU.map((pole) => (
             <tr key={pole}>
               <td className="whitespace-nowrap font-medium">{POLE_ODCZYTU_LABELS[pole]}</td>
-              <td>{opisWartosci(pole, odczyt.propozycja[pole])}</td>
+              <td>
+                {opisWartosci(pole, odczyt.propozycja[pole])}
+                {odczyt.pominietePola.includes(pole) && (
+                  <span
+                    className="badge ml-2 bg-gray-100 text-gray-600 dark:bg-gray-700/60 dark:text-gray-300"
+                    title="Przy rozpatrzeniu ewidencja została celowo inna niż odczyt — ta różnica nie jest zgłaszana ponownie"
+                  >
+                    pominięte
+                  </span>
+                )}
+              </td>
               {odczyt.komputer && <td>{opisWartosci(pole, odczyt.komputer[pole])}</td>}
             </tr>
           ))}
@@ -532,6 +549,9 @@ export function OdczytPage() {
             {formatujDate(odczyt.rozpatrzonoAt)}
             {odczyt.rozpatrzylAppUser && `, ${odczyt.rozpatrzylAppUser.login}`}
           </span>
+        )}
+        {odczyt.status === 'BEZ_ZMIAN' && (
+          <span>Dane zgodne z ewidencją (poza różnicami pominiętymi wcześniej) — nie było czego przeglądać.</span>
         )}
         {odczyt.status === 'ODRZUCONY' && (
           <span>

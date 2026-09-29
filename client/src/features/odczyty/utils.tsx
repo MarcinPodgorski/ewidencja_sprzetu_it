@@ -8,6 +8,11 @@ export function komendaOdczytu(kod: string): string {
   return `irm ${window.location.origin}${apiUrl(`/odczyt/${kod}`)} | iex`;
 }
 
+/** Instalator odczytu cyklicznego — ten sam kod, ale uruchamiany jako administrator. */
+export function komendaOdczytuCyklicznego(kod: string): string {
+  return `irm ${window.location.origin}${apiUrl(`/odczyt/${kod}/instaluj`)} | iex`;
+}
+
 export function StatusOdczytuBadge({ odczyt }: { odczyt: Pick<OdczytSprzetu, 'status' | 'zastapiony'> }) {
   if (odczyt.status === 'NOWY') {
     return (
@@ -19,6 +24,9 @@ export function StatusOdczytuBadge({ odczyt }: { odczyt: Pick<OdczytSprzetu, 'st
   }
   if (odczyt.status === 'ZASTOSOWANY') {
     return <span className="badge bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400">zastosowany</span>;
+  }
+  if (odczyt.status === 'BEZ_ZMIAN') {
+    return <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">bez zmian</span>;
   }
   return (
     <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">

@@ -36,6 +36,8 @@ export const konfiguracjaOnboardinguSchema = z.object({
   komunikat: z.object({ tytul: z.string(), tresc: z.string() }).nullable(),
   programy: z.array(programSchema),
   m365Apps: z.boolean(),
+  /** Stały token odczytu cyklicznego (zadanie w Harmonogramie zadań) — null = bez odczytu cyklicznego. */
+  tokenOdczytu: z.string().nullish(),
 });
 export type KonfiguracjaOnboardingu = z.infer<typeof konfiguracjaOnboardinguSchema>;
 
@@ -100,6 +102,7 @@ function blokKonfiguracji(tryb: OnboardingTryb, k: KonfiguracjaOnboardingu, opcj
     `${wciecie}$InstalujM365Apps = ${k.m365Apps ? '$true' : '$false'}`,
     `${wciecie}$AdresSerwera     = ${psQuote(opcje.adresSerwera)}`,
     `${wciecie}$KodSkryptu       = ${psQuote(opcje.kod)}`,
+    `${wciecie}$TokenAgenta      = ${psValue(k.tokenOdczytu ?? null)}`,
     programy,
   ].join('\n');
 }

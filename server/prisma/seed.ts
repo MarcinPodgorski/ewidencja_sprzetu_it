@@ -11,14 +11,28 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Seed czyści CAŁĄ bazę i wstawia dane demo z hasłem admin123 — w produkcji to katastrofa.
+  // Pierwsze konto admina na pustej bazie serwer zakłada sam (modules/appUsers/pierwszyAdmin.ts).
+  if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_W_PRODUKCJI !== 'tak') {
+    console.error(
+      'Odmowa: seed kasuje całą bazę i wstawia dane demo, a to jest produkcja (NODE_ENV=production).\n' +
+        'Konto administratora na pustej bazie serwer tworzy sam przy starcie — patrz README.\n' +
+        'Jeśli naprawdę chcesz dane demo: SEED_DEMO_W_PRODUKCJI=tak.',
+    );
+    process.exit(1);
+  }
+
   console.log('Czyszczenie istniejących danych...');
   await prisma.inwentaryzacja.deleteMany(); // pozycje kasowane kaskadowo
+  await prisma.zmianaDanych.deleteMany();
   await prisma.odczytSprzetu.deleteMany();
+  await prisma.odczytAgent.deleteMany();
   await prisma.odczytKod.deleteMany();
   await prisma.onboardingSesja.deleteMany();
   await prisma.profilOprogramowania.deleteMany(); // pozycje profili kasowane kaskadowo
   await prisma.oprogramowanie.deleteMany();
   await prisma.ustawieniaOnboardingu.deleteMany(); // domyślne wartości odtworzą się przy pierwszym odczycie
+  await prisma.ustawieniaStanuFloty.deleteMany(); // brak wiersza = żadna sekcja nie jest ukryta
   await prisma.equipmentListPermission.deleteMany();
   await prisma.equipmentListItem.deleteMany();
   await prisma.equipmentList.deleteMany();

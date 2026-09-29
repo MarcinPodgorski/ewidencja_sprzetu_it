@@ -43,6 +43,9 @@ import { EtykietyPage } from './features/etykiety/EtykietyPage';
 import { InwentaryzacjePage } from './features/inwentaryzacje/InwentaryzacjePage';
 import { InwentaryzacjaPage } from './features/inwentaryzacje/InwentaryzacjaPage';
 import { SkanPage } from './features/inwentaryzacje/SkanPage';
+import { KopiePage } from './features/kopie/KopiePage';
+import { StanFlotyPage } from './features/stanFloty/StanFlotyPage';
+import { ImportPage } from './features/import/ImportPage';
 
 export default function App() {
   return (
@@ -131,6 +134,11 @@ export default function App() {
             <Route path="/odczyty" element={<OdczytyPage />} />
             <Route path="/odczyty/:id" element={<OdczytPage />} />
 
+            <Route path="/stan-floty" element={<StanFlotyPage />} />
+
+            {/* Import z Excela/CSV */}
+            <Route path="/import" element={<ImportPage />} />
+
             {/* Naklejki QR i spis z natury */}
             <Route path="/etykiety" element={<EtykietyPage />} />
             <Route path="/inwentaryzacje" element={<InwentaryzacjePage />} />
@@ -139,6 +147,7 @@ export default function App() {
             {/* Działy, konta aplikacji, protokół przekazania */}
             <Route path="/departments" element={<DepartmentsPage />} />
             <Route path="/app-users" element={<AppUsersPage />} />
+            <Route path="/kopie" element={<KopiePage />} />
             <Route path="/protocols/new" element={<ProtocolGeneratorPage />} />
           </Route>
 

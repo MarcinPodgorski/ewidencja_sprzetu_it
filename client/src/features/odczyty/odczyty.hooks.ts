@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StatusOdczytu } from 'shared';
 import { api } from '../../lib/api';
-import type { Computer, OdczytKod, OdczytSprzetu, OdczytSzczegoly } from '../../types/entities';
+import type { Computer, OdczytAgent, OdczytKod, OdczytSprzetu, OdczytSzczegoly } from '../../types/entities';
 
 /** Aktywne kody: ogólne (bez parametru) albo przypięte do komputera. */
 export function useOdczytKody(computerId?: number) {
@@ -84,6 +84,22 @@ export function useOdrzucOdczyt() {
   const odswiez = useOdswiezPoOdczycie();
   return useMutation({
     mutationFn: (id: number) => api.post<{ item: OdczytSprzetu }>(`/odczyty/${id}/odrzuc`).then((r) => r.item),
+    onSuccess: odswiez,
+  });
+}
+
+/** Tokeny odczytu cyklicznego (zadania w Harmonogramie zadań) — dla komputera albo wszystkie. */
+export function useAgenciOdczytu(computerId?: number) {
+  return useQuery({
+    queryKey: ['odczyty', 'agenci', computerId ?? null],
+    queryFn: () => api.get<{ items: OdczytAgent[] }>('/odczyty/agenci', { computerId }).then((r) => r.items),
+  });
+}
+
+export function useWylaczAgenta() {
+  const odswiez = useOdswiezPoOdczycie();
+  return useMutation({
+    mutationFn: (id: number) => api.post<void>(`/odczyty/agenci/${id}/wylacz`),
     onSuccess: odswiez,
   });
 }

@@ -20,7 +20,12 @@ export interface DashboardStats {
     /** Odczyty danych sprzętu (skrypt/onboarding/plik) czekające na przejrzenie. */
     odczytyDoPrzejrzenia: number;
     inwentaryzacjeWToku: { id: number; nazwa: string; liczbaPozycji: number; liczbaPotwierdzonych: number }[];
+    /** Opis problemu z kopiami zapasowymi (brak świeżej kopii, nieudana próba) albo null. */
+    problemKopii: string | null;
+    /** Liczniki ze Stanu floty (bez „bez odczytu” — to informacja, nie problem). */
+    stanFloty: { windows10: number; bitlocker: number; entraId: number; gwarancje: number; doWymiany: number };
   };
+  kopie: { ostatnia: string | null; automatyczne: boolean };
 }
 
 export function useDashboardStats() {

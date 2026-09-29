@@ -31,6 +31,11 @@ import { odczytyRouter } from './modules/odczyty/odczyty.routes';
 import { odczytPublicznyRouter } from './modules/odczyty/odczyt.public.routes';
 import { etykietyRouter } from './modules/etykiety/etykiety.routes';
 import { inwentaryzacjeRouter } from './modules/inwentaryzacje/inwentaryzacje.routes';
+import { kopieRouter } from './modules/kopie/kopie.routes';
+import { historiaZmianRouter } from './modules/historiaZmian/historiaZmian.routes';
+import { stanFlotyRouter } from './modules/stanFloty/stanFloty.routes';
+import { szukajRouter } from './modules/szukaj/szukaj.routes';
+import { importRouter } from './modules/import/import.routes';
 
 export function createApp(): Express {
   const app = express();
@@ -43,7 +48,12 @@ export function createApp(): Express {
   app.use(cookieParser());
 
   if (env.NODE_ENV !== 'test') {
-    app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+    app.use(
+      morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined', {
+        // Healthcheck Dockera (co 30 s, nagłówek X-Healthcheck — patrz Dockerfile) zasypałby log.
+        skip: (req) => req.headers['x-healthcheck'] !== undefined,
+      }),
+    );
   }
 
   const apiRouter = express.Router();
@@ -70,6 +80,11 @@ export function createApp(): Express {
   apiRouter.use('/odczyty', odczytyRouter);
   apiRouter.use('/etykiety', etykietyRouter);
   apiRouter.use('/inwentaryzacje', inwentaryzacjeRouter);
+  apiRouter.use('/kopie', kopieRouter);
+  apiRouter.use('/historia-zmian', historiaZmianRouter);
+  apiRouter.use('/stan-floty', stanFlotyRouter);
+  apiRouter.use('/szukaj', szukajRouter);
+  apiRouter.use('/import', importRouter);
   // Publiczne (bez logowania) — jednolinijkowce na komputerach: `irm …/start/<kod> | iex`
   // (onboarding nowego laptopa) i `irm …/odczyt/<kod> | iex` (odczyt danych sprzętu).
   apiRouter.use('/start', onboardingStartRouter);

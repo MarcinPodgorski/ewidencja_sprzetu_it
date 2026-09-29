@@ -240,6 +240,8 @@ export interface KonfiguracjaOnboardingu {
       }
   )[];
   m365Apps: boolean;
+  /** Stały token odczytu cyklicznego — null/brak = skrypt nie instaluje zadania. */
+  tokenOdczytu?: string | null;
 }
 
 export interface OnboardingSesja {
@@ -270,6 +272,16 @@ export interface OdczytKod {
   liczbaOdczytow: number;
 }
 
+/** Stały token odczytu cyklicznego (zadanie „EwidencjaSprzetu-Odczyt” na komputerze). */
+export interface OdczytAgent {
+  id: number;
+  computerId: number | null;
+  aktywny: boolean;
+  createdAt: string;
+  ostatnioAt: string | null;
+  hostname: string | null;
+}
+
 /** Odczyt danych sprzętu na liście (bez surowych danych). */
 export interface OdczytSprzetu {
   id: number;
@@ -288,6 +300,8 @@ export interface OdczytSprzetu {
   markaModel: string | null;
   /** Odrzucony automatycznie, bo przyszedł nowszy odczyt tego samego komputera. */
   zastapiony: boolean;
+  /** Pola, w których po rozpatrzeniu ewidencja świadomie różni się od odczytu. */
+  pominietePola: PoleOdczytu[];
 }
 
 export type PropozycjaOdczytu = Partial<Record<PoleOdczytu, string | number>>;

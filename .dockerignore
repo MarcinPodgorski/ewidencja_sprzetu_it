@@ -1,0 +1,17 @@
+# Kontekst budowania obrazu: bez zależności i buildów z hosta (inna platforma — obraz
+# instaluje i buduje wszystko sam), bez danych i bez sekretów.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.vscode
+.idea
+**/.DS_Store
+**/.env
+**/.env.*
+server/prisma/data
+server/uploads
+server/backups
+**/*.log
+coverage
+CLAUDE.md

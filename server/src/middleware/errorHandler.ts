@@ -27,6 +27,18 @@ export function notFoundHandler(req: Request, _res: Response, next: NextFunction
   next(new AppError(404, `Nie znaleziono zasobu: ${req.method} ${req.originalUrl}`));
 }
 
+/** Błąd parsera treści żądania (express.json): uszkodzony JSON, za duże dane — to błąd klienta, nie serwera. */
+function bladTresciZadania(err: unknown): { status: number; komunikat: string } | null {
+  if (typeof err !== 'object' || err === null || !('type' in err) || !('status' in err)) return null;
+  const { type, status } = err as { type: unknown; status: unknown };
+  if (typeof status !== 'number' || status < 400 || status >= 500) return null;
+  if (type === 'entity.too.large') {
+    return { status: 413, komunikat: 'Za dużo danych w jednym żądaniu — podziel je na mniejsze części' };
+  }
+  if (type === 'entity.parse.failed') return { status: 400, komunikat: 'Nieprawidłowy format danych (JSON)' };
+  return { status, komunikat: 'Nieprawidłowe żądanie' };
+}
+
 export function errorHandler(
   err: unknown,
   _req: Request,
@@ -41,6 +53,12 @@ export function errorHandler(
 
   if (err instanceof AppError) {
     res.status(err.status).json({ error: err.message, details: err.details });
+    return;
+  }
+
+  const bladTresci = bladTresciZadania(err);
+  if (bladTresci) {
+    res.status(bladTresci.status).json({ error: bladTresci.komunikat });
     return;
   }
 

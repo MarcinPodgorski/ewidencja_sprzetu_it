@@ -18,6 +18,9 @@ server/prisma/data/
 # załączniki faktur (PDF/XML) — patrz server/src/config/uploads.ts
 server/uploads/
 
+# kopie zapasowe w dev (BACKUP_DIR) — patrz server/src/modules/kopie
+server/backups/
+
 # logs
 *.log
 npm-debug.log*

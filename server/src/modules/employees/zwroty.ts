@@ -7,6 +7,7 @@ import { fontDescriptors } from '../../pdf/fonts';
 import { buildProtocolDocDefinition, type ProtocolItem } from '../../pdf/protocolTemplate';
 import { getEquipmentDelegate } from '../equipment/equipmentLookup';
 import type { AssignableModelName } from '../assignmentHistory/assignmentHistory.service';
+import { zapiszZmiane } from '../historiaZmian/historiaZmian.service';
 
 /** Typy sprzętu, które mogą mieć bieżącego użytkownika (wszystkie oprócz drukarki). */
 export const ASSIGNABLE_TYPES = EQUIPMENT_TYPES.filter((t): t is Exclude<EquipmentType, 'DRUKARKA'> => t !== 'DRUKARKA');
@@ -121,7 +122,17 @@ export async function zapiszZwrot(req: Request, res: Response) {
       await tx.miscItem.deleteMany({ where: { id: { in: dane.rozne.map((r) => r.id) }, employeeId: id } });
     }
     if (dane.dezaktywuj) {
-      await tx.employee.update({ where: { id }, data: { aktywny: false } });
+      const po = await tx.employee.update({ where: { id }, data: { aktywny: false } });
+      await zapiszZmiane({
+        klient: tx,
+        encja: 'PRACOWNIK',
+        encjaId: id,
+        operacja: 'EDYCJA',
+        przed: pracownik,
+        po,
+        appUserId: req.user!.id,
+        kontekst: dane.odejscie ? 'odejście pracownika' : 'zwrot sprzętu',
+      });
     }
     // Sama dezaktywacja (pracownik nic nie miał albo nic nie oddał) — bez protokołu.
     if (pozycje.length === 0) return null;
@@ -154,7 +165,7 @@ export async function listaZwrotow(req: Request, res: Response) {
 
 /** Nazwa pliku bez polskich znaków — `filename=` z surowym UTF-8 bywa różnie obsługiwany. */
 function nazwaPliku(wartosc: string): string {
-  return wartosc.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').replace(/\s+/g, '-');
+  return wartosc.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L').replace(/\s+/g, '-');
 }
 
 /** GET /employees/:id/zwroty/:zwrotId/protokol — protokół zwrotu w PDF (z migawki). */

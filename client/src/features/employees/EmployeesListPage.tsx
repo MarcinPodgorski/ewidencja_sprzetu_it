@@ -40,16 +40,16 @@ export function EmployeesListPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         <input
           type="text"
           placeholder="Szukaj po imieniu i nazwisku…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="input max-w-xs"
+          className="input col-span-2 sm:max-w-xs"
         />
         <select
-          className="input max-w-[10rem]"
+          className="input sm:max-w-[10rem]"
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
         >
@@ -57,7 +57,7 @@ export function EmployeesListPage() {
           <option value="inactive">Nieaktywni</option>
           <option value="all">Wszyscy</option>
         </select>
-        <select className="input max-w-[12rem]" value={dzialId} onChange={(e) => setDzialId(e.target.value)}>
+        <select className="input sm:max-w-[12rem]" value={dzialId} onChange={(e) => setDzialId(e.target.value)}>
           <option value="">Wszystkie działy</option>
           {departments?.map((d) => (
             <option key={d.id} value={d.id}>

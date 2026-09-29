@@ -360,6 +360,13 @@ Start-Process 'ms-settings:workplace'
             Send-DaneSprzetu -Adres ('{0}/start/{1}/odczyt' -f $AdresSerwera, $KodSkryptu) -Dane (Get-DaneSprzetu)
         }
 
+        if ($TokenAgenta) {
+            Invoke-Krok 'Odczyt cykliczny do ewidencji (co tydzień)' {
+                Install-AgentOdczytu -AdresSerwera $AdresSerwera -Token $TokenAgenta | Out-Null
+                'OK — zadanie „EwidencjaSprzetu-Odczyt” w Harmonogramie zadań'
+            }
+        }
+
         # --------------------------------------------------------------------
         # 6. Nazwa komputera (na końcu — wymaga restartu)
         # --------------------------------------------------------------------

@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
 import { wygenerujKod } from '../../utils/kodDostepu';
 import * as assignmentHistoryService from '../assignmentHistory/assignmentHistory.service';
+import { utworzAgenta } from '../odczyty/odczyty.service';
 import { adresApi } from './adresApi';
 import {
   generateOnboardingScript,
@@ -147,6 +148,7 @@ onboardingRouter.post(
       komunikat: data.komunikat,
       programy: migawkaProgramow,
       m365Apps: data.m365Apps,
+      tokenOdczytu: data.odczytCykliczny ? (await utworzAgenta(computer.id)).token : null,
     };
 
     let token = wygenerujKod();

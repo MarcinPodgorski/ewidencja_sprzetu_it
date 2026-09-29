@@ -1,13 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import { env } from './env';
 
 /**
  * Katalogi na wgrane pliki — poza `prisma/` (to nie baza danych) i poza `dist/`
- * (żeby przeżyły `npm run build`/`clean`). Rozwiązywane jako ścieżki bezwzględne
- * względem lokalizacji tego pliku źródłowego (ten sam powód co przy DATABASE_URL w
- * config/env.ts: cwd różni się między `tsx watch` w dev a PM2 w produkcji).
+ * (żeby przeżyły `npm run build`/`clean`). Domyślnie server/uploads; zmienna
+ * UPLOADS_DIR przenosi je np. do wolumenu /data w Dockerze — obok kopii zapasowych,
+ * żeby kopie mogły twardo dowiązywać pliki zamiast je kopiować.
  */
-const UPLOADS_ROOT = path.resolve(__dirname, '../../uploads');
+export const UPLOADS_ROOT = env.UPLOADS_DIR;
 
 /** Załączniki faktur (PDF/XML). */
 export const UPLOADS_DIR = path.join(UPLOADS_ROOT, 'faktury');

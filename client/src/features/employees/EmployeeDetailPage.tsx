@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EQUIPMENT_API_SEGMENT, EQUIPMENT_TYPE_LABELS, type EquipmentType } from 'shared';
+import { HistoriaZmian, type PoleHistorii } from '../../components/HistoriaZmian';
 import { PageHeader } from '../../components/PageHeader';
 import { apiUrl } from '../../lib/api';
 import { employeesApi } from '../entities';
@@ -9,6 +10,15 @@ import { useEmployeeEquipment, useEmployeeHistory } from './employees.hooks';
 import { useMiscItems } from './miscItems.hooks';
 import { MiscItemsSection } from './MiscItemsSection';
 import { useZwroty } from './zwroty.hooks';
+
+const POLA_HISTORII: Record<string, PoleHistorii> = {
+  imie: { etykieta: 'Imię' },
+  nazwisko: { etykieta: 'Nazwisko' },
+  stanowisko: { etykieta: 'Stanowisko' },
+  email: { etykieta: 'E-mail' },
+  dzial: { etykieta: 'Dział' },
+  aktywny: { etykieta: 'Aktywny', format: (v) => (v ? 'tak' : 'nie') },
+};
 
 export function EmployeeDetailPage() {
   const { id } = useParams();
@@ -211,6 +221,8 @@ export function EmployeeDetailPage() {
           </div>
         )}
       </div>
+
+      <HistoriaZmian encja="PRACOWNIK" encjaId={employee.id} kluczOdswiezania="employees" pola={POLA_HISTORII} />
 
       {assignModalOpen && (
         <AssignEquipmentModal employeeId={employee.id} onClose={() => setAssignModalOpen(false)} />

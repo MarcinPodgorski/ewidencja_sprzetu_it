@@ -14,3 +14,13 @@ export function wygenerujKod(): string {
   for (let i = 0; i < 8; i++) kod += ALFABET_KODU[crypto.randomInt(ALFABET_KODU.length)];
   return kod;
 }
+
+/** Stały token odczytu cyklicznego — zapisany na komputerze i ważny bezterminowo (do wyłączenia),
+ *  więc dłuższy niż krótkie kody do przepisywania: 31^32 kombinacji. */
+export const TOKEN_REGEX = /^[a-hjkmnp-z2-9]{32}$/;
+
+export function wygenerujToken(): string {
+  let token = '';
+  for (let i = 0; i < 32; i++) token += ALFABET_KODU[crypto.randomInt(ALFABET_KODU.length)];
+  return token;
+}

@@ -1,0 +1,39 @@
+# Ewidencja sprzętu IT w Dockerze (np. w maszynie wirtualnej na Proxmoxie).
+#
+#   Pierwszy start:  echo "JWT_SECRET=$(openssl rand -hex 48)" > .env
+#                    docker compose up -d --build
+#                    docker compose logs sprzet-it     # hasło pierwszego konta „admin”
+#   Aktualizacja:    git pull && docker compose up -d --build
+#
+# Aplikacja: http://<adres-maszyny>/sprzet — szczegóły w README („Docker (np. na Proxmoxie)”).
+services:
+  sprzet-it:
+    build: .
+    image: sprzet-it:latest
+    container_name: sprzet-it
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:4000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Brak JWT_SECRET — utwórz plik .env obok docker-compose.yml (patrz README)}
+      # Hasło konta „admin” przy pierwszym starcie na pustej bazie; puste = losowe, w logu.
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      # true tylko za reverse proxy z HTTPS — inaczej przeglądarka nie odeśle ciasteczka sesji.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      BACKUP_AUTO: "true"
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      TZ: ${TZ:-Europe/Warsaw}
+    volumes:
+      # Baza (sprzet.db), załączniki (uploads/) i kopie zapasowe (backups/) w jednym wolumenie —
+      # kopie twardo dowiązują niezmienione pliki zamiast je kopiować.
+      - dane:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  dane:
+    name: sprzet-it-dane

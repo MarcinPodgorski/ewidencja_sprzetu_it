@@ -5,15 +5,19 @@ import { KomendaDoSkopiowania } from '../../components/KomendaDoSkopiowania';
 import { apiUrl } from '../../lib/api';
 import type { Computer } from '../../types/entities';
 import { formatujDate } from '../onboarding/utils';
-import { useOdczytKody, useOdczyty, useUtworzKodOdczytu } from './odczyty.hooks';
-import { StatusOdczytuBadge, komendaOdczytu } from './utils';
+import { useAgenciOdczytu, useOdczytKody, useOdczyty, useUtworzKodOdczytu, useWylaczAgenta } from './odczyty.hooks';
+import { StatusOdczytuBadge, komendaOdczytu, komendaOdczytuCyklicznego } from './utils';
+
+type Tryb = 'jednorazowy' | 'cykliczny' | null;
 
 /** Sekcja „Odczyt z komputera” na karcie komputera (część DetailExtra w computers.config). */
 export function ComputerOdczytPanel({ item }: { item: Computer }) {
   const { data: odczyty } = useOdczyty({ computerId: item.id });
   const { data: kody } = useOdczytKody(item.id);
+  const { data: agenci } = useAgenciOdczytu(item.id);
   const utworzKod = useUtworzKodOdczytu();
-  const [pokazKomende, setPokazKomende] = useState(false);
+  const wylaczAgenta = useWylaczAgenta();
+  const [tryb, setTryb] = useState<Tryb>(null);
 
   // Skrypt jest dla Windowsa — przy innych systemach sekcja zostaje tylko dla historii odczytów.
   const innySystem =
@@ -22,22 +26,47 @@ export function ComputerOdczytPanel({ item }: { item: Computer }) {
 
   const kod = kody?.[0];
   const nowy = odczyty?.find((o) => o.status === 'NOWY');
+  const agent = agenci?.find((a) => a.aktywny);
 
-  async function odczytaj() {
+  async function pokaz(nowyTryb: Tryb) {
     if (!kod) await utworzKod.mutateAsync(item.id);
-    setPokazKomende(true);
+    setTryb(nowyTryb);
   }
 
   return (
     <div className="mt-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Odczyt z komputera</h2>
-        {!item.wycofany && !innySystem && !pokazKomende && (
-          <button type="button" className="btn-secondary" disabled={utworzKod.isPending} onClick={odczytaj}>
-            Odczytaj dane z tego komputera
-          </button>
+        {!item.wycofany && !innySystem && (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary" disabled={utworzKod.isPending} onClick={() => pokaz('jednorazowy')}>
+              Odczytaj teraz
+            </button>
+            {!agent && (
+              <button type="button" className="btn-secondary" disabled={utworzKod.isPending} onClick={() => pokaz('cykliczny')}>
+                Włącz odczyt cykliczny
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+      {agent && (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-500/10 dark:text-green-300">
+          <span>
+            Odczyt cykliczny włączony (co tydzień) ·{' '}
+            {agent.ostatnioAt ? `ostatni odczyt ${formatujDate(agent.ostatnioAt)}` : 'czeka na pierwszy odczyt'}
+          </span>
+          <button
+            type="button"
+            className="text-sm font-medium underline"
+            disabled={wylaczAgenta.isPending}
+            onClick={() => wylaczAgenta.mutate(agent.id)}
+          >
+            Wyłącz
+          </button>
+        </div>
+      )}
 
       {nowy && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
@@ -50,19 +79,35 @@ export function ComputerOdczytPanel({ item }: { item: Computer }) {
         </div>
       )}
 
-      {pokazKomende && kod && (
+      {tryb && kod && (
         <div className="card mb-3">
-          <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
-            Na komputerze <strong>{item.numerEwidencyjny}</strong> otwórz PowerShell lub Terminal i wklej polecenie — odczyt
-            trafi prosto do tego komputera, do przejrzenia tutaj.
-          </p>
-          <KomendaDoSkopiowania komenda={komendaOdczytu(kod.kod)} />
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Ważne do {formatujDate(kod.wygasaAt)} ·{' '}
-            <a href={apiUrl(`/odczyty/kody/${kod.id}/skrypt`)} download className="font-medium text-indigo-600 dark:text-indigo-400">
-              pobierz jako plik .ps1
-            </a>
-          </p>
+          {tryb === 'jednorazowy' ? (
+            <>
+              <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Na komputerze <strong>{item.numerEwidencyjny}</strong> otwórz PowerShell lub Terminal i wklej polecenie — odczyt
+                trafi prosto do tego komputera, do przejrzenia tutaj.
+              </p>
+              <KomendaDoSkopiowania komenda={komendaOdczytu(kod.kod)} />
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Ważne do {formatujDate(kod.wygasaAt)} ·{' '}
+                <a href={apiUrl(`/odczyty/kody/${kod.id}/skrypt`)} download className="font-medium text-indigo-600 dark:text-indigo-400">
+                  pobierz jako plik .ps1
+                </a>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Na komputerze <strong>{item.numerEwidencyjny}</strong> otwórz <strong>Terminal (administrator)</strong> i wklej
+                polecenie. Założy zadanie w Harmonogramie zadań, które co tydzień wyśle odczyt — zmiany zobaczysz tutaj, a gdy nic
+                się nie zmieni, odczyt tylko potwierdzi, że komputer działa.
+              </p>
+              <KomendaDoSkopiowania komenda={komendaOdczytuCyklicznego(kod.kod)} />
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Polecenie ważne do {formatujDate(kod.wygasaAt)} — zainstalowane zadanie działa bezterminowo (do wyłączenia).
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -96,10 +141,10 @@ export function ComputerOdczytPanel({ item }: { item: Computer }) {
           </table>
         </div>
       ) : (
-        !pokazKomende && (
+        !tryb && (
           <div className="card text-sm text-gray-500 dark:text-gray-400">
             Skrypt odczyta z komputera model, numer seryjny, procesor, pamięć, dyski, wersję Windowsa i adresy MAC — a Ty
-            zdecydujesz, co przepisać do ewidencji.
+            zdecydujesz, co przepisać do ewidencji. Odczyt cykliczny powtarza to co tydzień.
           </div>
         )
       )}

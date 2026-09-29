@@ -9,6 +9,7 @@ import {
 import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
+import { zapiszZmiane } from '../historiaZmian/historiaZmian.service';
 import * as assignmentHistoryService from '../assignmentHistory/assignmentHistory.service';
 
 export const printersRouter = Router();
@@ -54,6 +55,7 @@ printersRouter.post(
   asyncHandler(async (req, res) => {
     const data = printerCreateSchema.parse(req.body);
     const item = await prisma.printer.create({ data });
+    await zapiszZmiane({ encja: 'DRUKARKA', encjaId: item.id, operacja: 'UTWORZENIE', po: item, appUserId: req.user!.id });
     res.status(201).json({ item });
   }),
 );
@@ -63,7 +65,9 @@ printersRouter.put(
   asyncHandler(async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const data = printerUpdateSchema.parse(req.body);
+    const przed = await prisma.printer.findUnique({ where: { id } });
     const item = await prisma.printer.update({ where: { id }, data });
+    await zapiszZmiane({ encja: 'DRUKARKA', encjaId: id, operacja: 'EDYCJA', przed, po: item, appUserId: req.user!.id });
     res.json({ item });
   }),
 );
@@ -76,6 +80,7 @@ printersRouter.delete(
       where: { id },
       data: { wycofany: true, dataWycofania: new Date() },
     });
+    await zapiszZmiane({ encja: 'DRUKARKA', encjaId: id, operacja: 'WYCOFANIE', po: item, appUserId: req.user!.id });
     res.json({ item });
   }),
 );
@@ -90,6 +95,7 @@ printersRouter.post(
       data: { wycofany: false, dataWycofania: null },
       include: tonerInclude,
     });
+    await zapiszZmiane({ encja: 'DRUKARKA', encjaId: id, operacja: 'PRZYWROCENIE', po: item, appUserId: req.user!.id });
     res.json({ item });
   }),
 );

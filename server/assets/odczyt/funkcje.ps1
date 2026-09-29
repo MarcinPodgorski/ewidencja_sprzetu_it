@@ -168,8 +168,9 @@
 
     # Wysyła odczyt do aplikacji. Gdy serwer jest nieosiągalny (np. laptop poza siecią
     # firmy), zapisuje dane w pliku JSON na pulpicie — admin wgra go w aplikacji.
+    # -BezPliku: odczyt cykliczny (konto SYSTEM) — bez pliku, spróbuje za tydzień.
     function Send-DaneSprzetu {
-        param([string]$Adres, $Dane)
+        param([string]$Adres, $Dane, [switch]$BezPliku)
         $json = $Dane | ConvertTo-Json -Depth 6 -Compress
         # Treść jako bajty UTF-8: PowerShell 5.1 kodowałby tekst jako ISO-8859-1 i psuł polskie znaki.
         $bajty = [System.Text.Encoding]::UTF8.GetBytes($json)
@@ -183,8 +184,32 @@
                 $przyczyna = $blad.ErrorDetails.Message
                 try { $przyczyna = [string]($blad.ErrorDetails.Message | ConvertFrom-Json).error } catch { }
             }
+            if ($BezPliku) { throw ('Nie udało się wysłać danych do ewidencji ({0}).' -f $przyczyna) }
             $plik = Join-Path ([Environment]::GetFolderPath('Desktop')) ('odczyt-{0}.json' -f $env:COMPUTERNAME)
             [System.IO.File]::WriteAllText($plik, $json, (New-Object System.Text.UTF8Encoding($false)))
             throw ('Nie udało się wysłać danych do ewidencji ({0}). Zapisano je w pliku {1} — wgraj go w aplikacji: Odczyt sprzętu > Wgraj plik.' -f $przyczyna, $plik)
         }
+    }
+
+    # Odczyt cykliczny: skrypt z tokenem komputera w katalogu dostępnym tylko dla SYSTEM
+    # i Administratorów + zadanie w Harmonogramie zadań (co tydzień, na koncie SYSTEM, więc
+    # odczyta też BitLockera). Wymaga uprawnień administratora. Zwraca ścieżkę skryptu.
+    function Install-AgentOdczytu {
+        param([string]$AdresSerwera, [string]$Token)
+        $katalog = Join-Path $env:ProgramData 'EwidencjaSprzetu'
+        New-Item -ItemType Directory -Path $katalog -Force | Out-Null
+        # Token pozwala wysyłać odczyty tego komputera — zwykły użytkownik nie może go przeczytać.
+        # Konta po SID-ach, bo nazwy (np. „Administratorzy”) zależą od języka Windowsa.
+        & icacls.exe $katalog /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw ('Nie udało się ustawić uprawnień katalogu (icacls: {0})' -f $LASTEXITCODE) }
+        $skrypt = Join-Path $katalog 'odczyt.ps1'
+        Invoke-WebRequest -Uri ('{0}/odczyt/agent/{1}/skrypt' -f $AdresSerwera, $Token) -OutFile $skrypt -UseBasicParsing
+        $akcja = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ('-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $skrypt)
+        # Losowe opóźnienie rozkłada odczyty wielu komputerów w czasie.
+        $wyzwalacz = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At '10:00' -RandomDelay (New-TimeSpan -Hours 3)
+        $konto = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+        # Komputer wyłączony o tej porze? StartWhenAvailable nadrobi odczyt przy najbliższej okazji.
+        $ustawienia = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RunOnlyIfNetworkAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 15)
+        Register-ScheduledTask -TaskName 'EwidencjaSprzetu-Odczyt' -Description 'Co tydzień wysyła dane sprzętu tego komputera do aplikacji Ewidencja sprzętu IT.' -Action $akcja -Trigger $wyzwalacz -Principal $konto -Settings $ustawienia -Force | Out-Null
+        return $skrypt
     }

@@ -5,6 +5,7 @@ import { prisma } from '../../db/prisma';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { asyncHandler, AppError } from '../../middleware/errorHandler';
 import { getEquipmentSummary } from '../equipment/equipmentLookup';
+import { pracownikDoHistorii, zapiszZmiane } from '../historiaZmian/historiaZmian.service';
 import { listaZwrotow, protokolZwrotu, sprzetPracownika, zapiszZwrot } from './zwroty';
 
 export const employeesRouter = Router();
@@ -59,6 +60,7 @@ employeesRouter.post(
   asyncHandler(async (req, res) => {
     const data = employeeCreateSchema.parse(req.body);
     const item = await prisma.employee.create({ data, include: { dzial: true } });
+    await zapiszZmiane({ encja: 'PRACOWNIK', encjaId: item.id, operacja: 'UTWORZENIE', po: pracownikDoHistorii(item), appUserId: req.user!.id });
     res.status(201).json({ item });
   }),
 );
@@ -68,7 +70,16 @@ employeesRouter.put(
   asyncHandler(async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const data = employeeUpdateSchema.parse(req.body);
+    const przed = await prisma.employee.findUnique({ where: { id }, include: { dzial: true } });
     const item = await prisma.employee.update({ where: { id }, data, include: { dzial: true } });
+    await zapiszZmiane({
+      encja: 'PRACOWNIK',
+      encjaId: id,
+      operacja: 'EDYCJA',
+      przed: przed && pracownikDoHistorii(przed),
+      po: pracownikDoHistorii(item),
+      appUserId: req.user!.id,
+    });
     res.json({ item });
   }),
 );
@@ -78,7 +89,9 @@ employeesRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
+    const przed = await prisma.employee.findUnique({ where: { id } });
     const item = await prisma.employee.update({ where: { id }, data: { aktywny: false } });
+    await zapiszZmiane({ encja: 'PRACOWNIK', encjaId: id, operacja: 'EDYCJA', przed, po: item, appUserId: req.user!.id, kontekst: 'dezaktywacja' });
     res.json({ item });
   }),
 );
