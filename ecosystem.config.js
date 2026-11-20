@@ -1,7 +1,7 @@
 // Konfiguracja PM2 dla produkcji. Uruchamiane z katalogu repo na serwerze Ubuntu:
 //   pm2 start ecosystem.config.js
 //   pm2 save
-// Przed pierwszym startem: `npm ci && npm run build && npm run prisma:migrate:deploy`.
+// Przed pierwszym startem: `npm ci && npm run build` (migracje bazy serwer nakłada sam przy starcie).
 //
 // WAŻNE: podmień JWT_SECRET na losowy ciąg przed wdrożeniem, np.:
 //   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"

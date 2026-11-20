@@ -1,4 +1,5 @@
-# Ewidencja sprzętu IT w Dockerze (np. w maszynie wirtualnej na Proxmoxie).
+# Ewidencja sprzętu IT w Dockerze (np. w maszynie wirtualnej na Proxmoxie):
+# aplikacja + nginx jako reverse proxy (konfiguracja: nginx/sprzet-it.conf).
 #
 #   Pierwszy start:  echo "JWT_SECRET=$(openssl rand -hex 48)" > .env
 #                    docker compose up -d --build
@@ -12,13 +13,12 @@ services:
     image: sprzet-it:latest
     container_name: sprzet-it
     restart: unless-stopped
-    ports:
-      - "${HTTP_PORT:-80}:4000"
+    # Bez portu na zewnątrz — ruch przychodzi wyłącznie przez nginx (sieć wewnętrzna Dockera).
     environment:
       JWT_SECRET: ${JWT_SECRET:?Brak JWT_SECRET — utwórz plik .env obok docker-compose.yml (patrz README)}
       # Hasło konta „admin” przy pierwszym starcie na pustej bazie; puste = losowe, w logu.
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
-      # true tylko za reverse proxy z HTTPS — inaczej przeglądarka nie odeśle ciasteczka sesji.
+      # true tylko przy HTTPS — inaczej przeglądarka nie odeśle ciasteczka sesji.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       BACKUP_AUTO: "true"
       BACKUP_HOUR: ${BACKUP_HOUR:-2}
@@ -28,11 +28,23 @@ services:
       # Baza (sprzet.db), załączniki (uploads/) i kopie zapasowe (backups/) w jednym wolumenie —
       # kopie twardo dowiązują niezmienione pliki zamiast je kopiować.
       - dane:/data
-    logging:
+    logging: &logi
       driver: json-file
       options:
         max-size: 10m
         max-file: "3"
+
+  nginx:
+    build: ./nginx
+    image: sprzet-it-nginx:latest
+    container_name: sprzet-it-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      sprzet-it:
+        condition: service_healthy
+    logging: *logi
 
 volumes:
   dane:

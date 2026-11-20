@@ -1,10 +1,12 @@
 import { env } from './config/env';
+import { nalozMigracje } from './db/migracje';
 import { initDatabase } from './db/prisma';
 import { createApp } from './app';
 import { utworzPierwszegoAdmina } from './modules/appUsers/pierwszyAdmin';
 import { uruchomHarmonogramKopii } from './modules/kopie/kopie.service';
 
 async function main() {
+  nalozMigracje();
   await initDatabase();
   await utworzPierwszegoAdmina();
 

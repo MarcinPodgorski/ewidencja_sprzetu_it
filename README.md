@@ -142,10 +142,12 @@ Sam `npm ci` (instalacja z lockfile, także przy wdrożeniu) działa poprawnie.
 ## Build produkcyjny
 
 ```bash
-npm run build                       # buduje shared -> server -> client
-npm run prisma:migrate:deploy       # zastosowanie migracji na docelowej bazie (server/.env)
+npm run build                       # buduje shared -> server (z klientem Prismy) -> client
 npm start                           # uruchamia server/dist/index.js (serwuje też zbudowany klient)
 ```
+
+W produkcji (`NODE_ENV=production`) serwer przy każdym starcie sam nakłada brakujące migracje
+bazy — na tę samą bazę, której używa (`DATABASE_URL`), więc nie ma osobnego kroku do pamiętania.
 
 Backend serwuje statyczny build klienta (`client/dist`) i API pod tym samym
 procesem/portem — nie trzeba osobnego serwera dla frontendu w produkcji.
@@ -162,7 +164,6 @@ sudo chown $USER:$USER /var/lib/sprzet-it /var/log/sprzet-it
 cd /opt/sprzet-it
 npm ci
 npm run build
-npm run prisma:migrate:deploy   # wymaga DATABASE_URL — patrz niżej
 
 # wygeneruj losowy JWT_SECRET i wklej do ecosystem.config.js:
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
@@ -172,10 +173,8 @@ pm2 save
 pm2 startup   # rejestruje PM2 jako usługę systemd, uruchamianą przy starcie serwera
 ```
 
-`prisma:migrate:deploy` czyta `DATABASE_URL` z `server/.env` — na serwerze ustaw
-tam tę samą wartość, która jest w `ecosystem.config.js` (`file:/var/lib/sprzet-it/sprzet.db`),
-tylko na czas uruchomienia migracji (PM2 sam wstrzykuje zmienne środowiskowe
-w runtime niezależnie od `.env`).
+Bazę (`/var/lib/sprzet-it/sprzet.db`) tworzy i aktualizuje sam serwer przy starcie — migracje
+nakłada z ustawieniami z `ecosystem.config.js`, `server/.env` na serwerze nie jest potrzebny.
 
 Przy pierwszym starcie na pustej bazie aplikacja sama zakłada konto administratora
 (login `admin`) i wypisuje jego losowe hasło w logu (`pm2 logs sprzet-it`) — hasło można też
@@ -199,7 +198,9 @@ server {
 
         proxy_pass http://127.0.0.1:4000/sprzet/;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        # $http_host z portem — skrypty onboardingu i odczytu biorą z niego adres serwera
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -247,8 +248,7 @@ cd /opt/sprzet-it
 git pull
 npm ci
 npm run build
-npm run prisma:migrate:deploy
-pm2 restart sprzet-it
+pm2 restart sprzet-it   # migracje bazy nakładają się przy starcie
 ```
 
 ## Docker (np. na Proxmoxie)
@@ -266,11 +266,14 @@ docker compose up -d --build
 docker compose logs sprzet-it     # login „admin” i hasło pierwszego konta
 ```
 
-Aplikacja jest pod `http://<adres-VM>/sprzet` (inny port: `HTTP_PORT=8080` w `.env`). W `.env`
-możesz też ustawić `INITIAL_ADMIN_PASSWORD` (hasło pierwszego admina zamiast losowego),
-`BACKUP_HOUR` i `BACKUP_RETENTION_DAYS`. Obraz sam wykonuje migracje bazy przy każdym starcie,
-działa na koncie bez uprawnień roota, a restartami zajmuje się Docker (`restart: unless-stopped`) —
-PM2 i nginx nie są potrzebne.
+Aplikacja jest pod `http://<adres-VM>/sprzet` (sam adres przekierowuje na `/sprzet/`; inny port:
+`HTTP_PORT=8080` w `.env`). W `.env` możesz też ustawić `INITIAL_ADMIN_PASSWORD` (hasło pierwszego
+admina zamiast losowego), `BACKUP_HOUR` i `BACKUP_RETENTION_DAYS`.
+
+Działają dwa kontenery: `sprzet-it` (aplikacja; sama wykonuje migracje bazy przy starcie, działa na
+koncie bez uprawnień roota, bez portu na zewnątrz) i `sprzet-it-nginx` (reverse proxy z
+`nginx/sprzet-it.conf`: port 80, kompresja gzip, limit wgrywanych plików, miejsce na HTTPS).
+Restartami zajmuje się Docker (`restart: unless-stopped`) — PM2 nie jest potrzebne.
 
 **Dane** leżą w wolumenie `sprzet-it-dane` (w kontenerze `/data`, w VM
 `/var/lib/docker/volumes/sprzet-it-dane/_data`): baza `sprzet.db`, załączniki i instalatory
@@ -278,8 +281,9 @@ PM2 i nginx nie są potrzebne.
 wolumenie nie chronią przed awarią dysku — włącz też kopie całej VM w Proxmoxie (Datacenter →
 Backup) albo kopiuj katalog `backups/` na NAS.
 
-**Aktualizacja:** `git pull && docker compose up -d --build`, potem `docker image prune -f`
-(usuwa poprzednie wersje obrazu).
+**Aktualizacja:** `git pull && docker compose build --pull && docker compose up -d`, potem
+`docker image prune -f` (usuwa poprzednie wersje obrazów). `--pull` pobiera też nowsze obrazy
+bazowe Node i nginx z poprawkami bezpieczeństwa.
 
 **Przywracanie kopii** (strona Kopie zapasowe pokazuje te polecenia z nazwą najnowszej kopii):
 
@@ -291,9 +295,10 @@ docker compose run --rm --entrypoint sh sprzet-it -c 'K=/data/backups/<kopia> &&
 docker compose start sprzet-it
 ```
 
-**HTTPS / domena:** postaw przed kontenerem reverse proxy (np. Nginx Proxy Manager albo Caddy)
-kierujące na port aplikacji i ustaw `COOKIE_SECURE=true` w `.env`. Nagłówki `X-Forwarded-*` są
-uwzględniane, więc skrypty onboardingu i odczytu dostaną właściwy adres serwera.
+**HTTPS / domena:** dopisz w `nginx/sprzet-it.conf` blok `listen 443 ssl` z certyfikatem (i port
+443 w `docker-compose.yml`) albo postaw przed maszyną osobne proxy (np. Nginx Proxy Manager),
+a w `.env` ustaw `COOKIE_SECURE=true`. Nagłówki `X-Forwarded-*` są uwzględniane, więc skrypty
+onboardingu i odczytu dostaną właściwy adres serwera.
 
 Lżejsza alternatywa bez Dockera: kontener LXC z Debianem i instalacja jak w sekcji
 „Wdrożenie na Ubuntu (PM2 + nginx)”.
